@@ -1,23 +1,33 @@
 import { api } from "@/services/api";
 import { z } from "zod";
-import { 
-    {{pascalCase name}}Schema, 
+import {
+    {{pascalCase name}}Schema,
     type {{pascalCase name}},
     type Create{{pascalCase name}}Input,
-    type Update{{pascalCase name}}Input 
+    type Update{{pascalCase name}}Input,
 } from "./{{camelCase name}}.schema";
+
+const PageResponseSchema = z.object({
+    items: z.array({{pascalCase name}}Schema),
+    nextCursor: z.string().optional(),
+});
 
 export const {{camelCase name}}Service = {
     getById: async (id: string): Promise<{{pascalCase name}}> => {
-        // Uses pluralize helper: e.g., /categories/123
         const data = await api.url(`/{{pluralize (kebabCase name)}}/${id}`).get().json();
         return {{pascalCase name}}Schema.parse(data);
     },
 
     getAll: async (): Promise<{{pascalCase name}}[]> => {
-        // Uses pluralize helper: e.g., /categories
         const data = await api.url("/{{pluralize (kebabCase name)}}").get().json();
         return z.array({{pascalCase name}}Schema).parse(data);
+    },
+
+    // DynamoDB cursor-based pagination — pass nextCursor from the previous page as the cursor arg
+    getPage: async (cursor?: string): Promise<{ items: {{pascalCase name}}[]; nextCursor?: string }> => {
+        const params = cursor ? { cursor } : {};
+        const data = await api.url("/{{pluralize (kebabCase name)}}").query(params).get().json();
+        return PageResponseSchema.parse(data);
     },
 
     create: async (payload: Create{{pascalCase name}}Input): Promise<{{pascalCase name}}> => {
@@ -32,5 +42,5 @@ export const {{camelCase name}}Service = {
 
     delete: async (id: string): Promise<void> => {
         await api.url(`/{{pluralize (kebabCase name)}}/${id}`).delete().res();
-    }
+    },
 };
