@@ -2,7 +2,7 @@ import wretch from "wretch";
 import QueryStringAddon from "wretch/addons/queryString";
 // import { z } from "zod";
 
-export const api = wretch("https://jsonplaceholder.typicode.com")
+export const api = wretch(import.meta.env.VITE_API_BASE_URL ?? "https://jsonplaceholder.typicode.com")
   .addon(QueryStringAddon); // Helps with ?id=123 params
 //   .middlewares([
 //     // 1. Auth Middleware: Automatically attaches token to every request
