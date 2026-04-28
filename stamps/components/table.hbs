@@ -1,28 +1,96 @@
-import { use{{pluralize (pascalCase name)}} } from "@/features/{{camelCase name}}";
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
+import { use{{pluralize (pascalCase name)}}, type {{pascalCase name}} } from "@/features/{{camelCase name}}";
 
-export const {{pascalCase name}}Table = () => {
-    const { data: {{camelCase (pluralize name)}}, error, isLoading } = use{{pluralize (pascalCase name)}}();
+interface {{pascalCase name}}TableProps {
+    onEdit?: (item: {{pascalCase name}}) => void;
+    onDelete?: (id: string) => void;
+}
+
+const columnHelper = createColumnHelper<{{pascalCase name}}>();
+
+export const {{pascalCase name}}Table = ({ onEdit, onDelete }: {{pascalCase name}}TableProps) => {
+    const { data: {{camelCase (pluralize name)}} = [], isLoading, error } = use{{pluralize (pascalCase name)}}();
+
+    const columns = [
+        columnHelper.accessor("id", {
+            header: "ID",
+            cell: (info) => info.getValue(),
+        }),
+        {{#each fields}}
+        columnHelper.accessor("{{camelCase this}}", {
+            header: "{{label this}}",
+            cell: (info) => info.getValue(),
+        }),
+        {{/each}}
+        ...(onEdit || onDelete
+            ? [
+                columnHelper.display({
+                    id: "actions",
+                    header: "",
+                    cell: ({ row }) => (
+                        <div className="flex gap-2">
+                            {onEdit && (
+                                <button
+                                    onClick={() => onEdit(row.original)}
+                                    className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                                >
+                                    Edit
+                                </button>
+                            )}
+                            {onDelete && (
+                                <button
+                                    onClick={() => onDelete(row.original.id)}
+                                    className="text-xs px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50"
+                                >
+                                    Delete
+                                </button>
+                            )}
+                        </div>
+                    ),
+                }),
+              ]
+            : []),
+    ];
+
+    const table = useReactTable({
+        data: {{camelCase (pluralize name)}},
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
 
     if (isLoading) return <div>Loading {{lowerCase (pluralize name)}}...</div>;
-    if (error) return <div className="text-red-600">❌ Error: {{lb}}error.message{{rb}}</div>;
+    if (error) return <div className="text-red-600">❌ Error: {error.message}</div>;
 
     return (
         <div className="p-5">
             <h2 className="text-2xl font-bold mb-4">{{titleCase (pluralize name)}}</h2>
             <table className="w-full border-collapse border border-gray-300">
                 <thead>
-                    <tr className="bg-gray-100">
-                        <th className="p-2 border border-gray-300">ID</th>
-                        <th className="p-2 border border-gray-300">Name</th>
-                    </tr>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id} className="bg-gray-100">
+                            {headerGroup.headers.map((header) => (
+                                <th key={header.id} className="p-2 border border-gray-300 text-left">
+                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                </th>
+                            ))}
+                        </tr>
+                    ))}
                 </thead>
                 <tbody>
-                    {{lb}} {{camelCase (pluralize name)}}?.map((item) => (
-                        <tr key={{lb}}item.id{{rb}} className="hover:bg-gray-50">
-                            <td className="p-2 border border-gray-300 text-center">{{lb}}item.id{{rb}}</td>
-                            <td className="p-2 border border-gray-300">{{lb}}item.name{{rb}}</td>
+                    {table.getRowModel().rows.map((row) => (
+                        <tr key={row.id} className="hover:bg-gray-50">
+                            {row.getVisibleCells().map((cell) => (
+                                <td key={cell.id} className="p-2 border border-gray-300">
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </td>
+                            ))}
                         </tr>
-                    )) {{rb}}
+                    ))}
                 </tbody>
             </table>
         </div>
