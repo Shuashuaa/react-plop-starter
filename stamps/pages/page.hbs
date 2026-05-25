@@ -1,0 +1,36 @@
+/**
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. Keep this a thin route component — DO NOT add data fetching or mutations here.
+ * 2. Compose existing components. Interactive logic lives in the Manager / client
+ *    components, not in the page.
+ * 3. Add page-level UI (actions, filters) only in the AI GENERATION ZONE.
+ */
+{{#if managerComponent}}
+import { {{managerComponent}} } from "@/components/{{managerComponent}}";
+{{else if tableComponent}}
+import { {{tableComponent}} } from "@/components/{{tableComponent}}";
+{{/if}}
+
+export default function {{pascalCase name}}Page() {
+  return (
+    <main className="bg-slate-50 p-6 min-h-screen">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">{{titleCase (pluralize name)}}</h1>
+          <p className="text-sm text-slate-500">Manage {{lowerCase (pluralize name)}}</p>
+        </div>
+        {/* AI GENERATION ZONE: @AI_TASK page-level actions (e.g. "New" button). */}
+        {/* END AI GENERATION ZONE */}
+      </div>
+{{#if managerComponent}}
+      {/* Manager owns the New/Edit/Delete UI and the list table. */}
+      <{{managerComponent}} />
+{{else if tableComponent}}
+      <{{tableComponent}} />
+{{else}}
+      {/* AI GENERATION ZONE: @AI_TASK render this page's content here. */}
+      {/* END AI GENERATION ZONE */}
+{{/if}}
+    </main>
+  );
+}

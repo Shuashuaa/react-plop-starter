@@ -1,110 +1,78 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { Create{{pascalCase name}}Schema, type Create{{pascalCase name}}Input } from "@/features/{{camelCase name}}";
+import {
+  inputClass,
+  labelClass,
+  fieldErrorClass,
+  serverErrorClass,
+  buttonClass,
+} from "@/components/ui";
 
-// Next thing to do:
-// 1.You have to generate resource for {{name}}
-// 2.Update the resource {{name}}.schema.ts to accomodate {{pascalCase name}}Form.tsx form fields.
+/**
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. DO NOT change the component signature, RHF setup, or handleFormSubmit logic.
+ * 2. Validation comes from Create{{pascalCase name}}Schema via zodResolver — edit the
+ *    schema first, then add matching inputs inside the AI GENERATION ZONE.
+ * 3. Register every input with {...register("fieldName")} using exact schema keys.
+ * 4. Reuse inputClass/labelClass/fieldErrorClass — DO NOT inline new styles.
+ */
+
+// Next steps:
+// 1. Run "Resource" generator for "{{name}}" if you haven't already.
+// 2. Update {{camelCase name}}.schema.ts to match the fields below.
 
 interface {{pascalCase name}}FormProps {
-    onSubmit: (data: Create{{pascalCase name}}Input) => void;
-    defaultValues?: Partial<Create{{pascalCase name}}Input>;
+  onSubmit: (data: Create{{pascalCase name}}Input) => Promise<void>;
+  defaultValues?: Partial<Create{{pascalCase name}}Input>;
 }
 
 export const {{pascalCase name}}Form = ({ onSubmit, defaultValues }: {{pascalCase name}}FormProps) => {
-    const {
-        register,
-        handleSubmit,
-        formState: { errors, isSubmitting }
-    } = useForm<Create{{pascalCase name}}Input>({
-        resolver: zodResolver(Create{{pascalCase name}}Schema),
-        defaultValues
-    });
+  const [serverError, setServerError] = useState<string | null>(null);
 
-    return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
-            <div>
-                <label htmlFor="name" className="block text-sm font-medium mb-1">
-                    Name
-                </label>
-                <input
-                    id="name"
-                    type="text"
-                    {...register("name")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.name && (
-                    <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>
-                )}
-            </div>
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<Create{{pascalCase name}}Input>({
+    resolver: zodResolver(Create{{pascalCase name}}Schema),
+    defaultValues,
+  });
 
-            <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1">
-                    Email
-                </label>
-                <input
-                    id="email"
-                    type="email"
-                    {...register("email")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.email && (
-                    <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
-                )}
-            </div>
+  const handleFormSubmit = async (data: Create{{pascalCase name}}Input) => {
+    try {
+      setServerError(null);
+      await onSubmit(data);
+    } catch {
+      setServerError("Something went wrong. Please try again.");
+    }
+  };
 
-            <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-1">
-                    Password
-                </label>
-                <input
-                    id="password"
-                    type="password"
-                    {...register("password")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.password && (
-                    <p className="text-red-600 text-sm mt-1">{errors.password.message}</p>
-                )}
-            </div>
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {serverError && <p className={serverErrorClass}>{serverError}</p>}
 
-            <div>
-                <label htmlFor="username" className="block text-sm font-medium mb-1">
-                    Username
-                </label>
-                <input
-                    id="username"
-                    type="text"
-                    {...register("username")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.username && (
-                    <p className="text-red-600 text-sm mt-1">{errors.username.message}</p>
-                )}
-            </div>
+      {/* ====================================================================
+        * AI GENERATION ZONE: One <div> block per schema field below.
+        * @AI_TASK: Mirror this block for each Create{{pascalCase name}}Schema field.
+        *           Keep register() keys identical to schema keys.
+        * ==================================================================== */}
+      <div>
+        <label className={labelClass}>Name *</label>
+        <input
+          type="text"
+          aria-required
+          className={inputClass}
+          {...register("name")}
+        />
+        {errors.name && <p className={fieldErrorClass}>{errors.name.message}</p>}
+      </div>
+      {/* ===================== END AI GENERATION ZONE ===================== */}
 
-            <div>
-                <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                    Phone
-                </label>
-                <input
-                    id="phone"
-                    type="tel"
-                    {...register("phone")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.phone && (
-                    <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>
-                )}
-            </div>
-
-            <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
-        </form>
-    );
+      <button type="submit" disabled={isSubmitting} className={buttonClass}>
+        {isSubmitting ? "Saving..." : "Save"}
+      </button>
+    </form>
+  );
 };

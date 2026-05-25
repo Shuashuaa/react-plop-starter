@@ -1,34 +1,68 @@
-import useSWR from "swr";
-import useSWRMutation from "swr/mutation";
+/**
+ * @file use{{pascalCase name}}.ts
+ * @description TanStack Query hooks for the {{pascalCase name}} resource.
+ *
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. DO NOT rename the exported hooks or change their queryKey shape — keys must
+ *    stay consistent so invalidation works ([resource] / [resource, id]).
+ * 2. Call {{camelCase name}}Service methods only. DO NOT fetch directly here.
+ * 3. Add NEW hooks only inside the AI GENERATION ZONE at the bottom.
+ */
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { {{camelCase name}}Service } from "./{{camelCase name}}.service";
-import { type Update{{pascalCase name}}Input } from "./{{camelCase name}}.schema";
+import { type Create{{pascalCase name}}Input, type Update{{pascalCase name}}Input } from "./{{camelCase name}}.schema";
 
-// 1. Fetch a single item by ID
 export const use{{pascalCase name}} = (id: string | null) => {
-    return useSWR(
-        id ? ["{{kebabCase name}}", id] : null, 
-        () => {{camelCase name}}Service.getById(id!),
-        { revalidateOnFocus: false, errorRetryCount: 2 }
-    );
+  return useQuery({
+    queryKey: ["{{kebabCase name}}", id],
+    queryFn: () => {{camelCase name}}Service.getById(id!),
+    enabled: !!id,
+  });
 };
 
-// 2. Fetch the full list
 export const use{{pluralize (pascalCase name)}} = () => {
-    return useSWR("{{pluralize (kebabCase name)}}-list", () => {{camelCase name}}Service.getAll());
+  return useQuery({
+    queryKey: ["{{pluralize (kebabCase name)}}"],
+    queryFn: () => {{camelCase name}}Service.getAll(),
+  });
 };
 
-// 3. Mutation Hook for Updates (No more 'any'!)
-export const useUpdate{{pascalCase name}} = (id: string) => {
-    return useSWRMutation(
-        ["{{kebabCase name}}", id], // This key matches the useSWR key for auto-revalidation
-        (_, { arg }: { arg: Update{{pascalCase name}}Input }) => {{camelCase name}}Service.update(id, arg)
-    );
+export const useCreate{{pascalCase name}} = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Create{{pascalCase name}}Input) =>
+      {{camelCase name}}Service.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["{{pluralize (kebabCase name)}}"] });
+    },
+  });
 };
 
-// 4. Mutation Hook for Deletion
+export const useUpdate{{pascalCase name}} = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Update{{pascalCase name}}Input }) =>
+      {{camelCase name}}Service.update(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["{{kebabCase name}}", id] });
+      queryClient.invalidateQueries({ queryKey: ["{{pluralize (kebabCase name)}}"] });
+    },
+  });
+};
+
 export const useDelete{{pascalCase name}} = () => {
-    return useSWRMutation(
-        "{{pluralize (kebabCase name)}}-list",
-        (_, { arg: id }: { arg: string }) => {{camelCase name}}Service.delete(id)
-    );
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => {{camelCase name}}Service.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["{{pluralize (kebabCase name)}}"] });
+    },
+  });
 };
+
+/* ==========================================================================
+ * AI GENERATION ZONE: Add custom {{pascalCase name}} hooks below.
+ * @AI_TASK: Wrap a custom {{camelCase name}}Service method in useQuery/useMutation.
+ *           Reuse the existing queryKeys above and invalidate them on success.
+ * ========================================================================== */
+/* ===================== END AI GENERATION ZONE ============================ */
