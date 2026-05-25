@@ -1,0 +1,34 @@
+import wretch from "wretch";
+import QueryStringAddon from "wretch/addons/queryString";
+
+export const api = wretch(import.meta.env.VITE_API_URL ?? "")
+  .addon(QueryStringAddon)
+  .middlewares([
+    // Auth: attach Amplify Cognito idToken to every request.
+    (next) => async (url, opts) => {
+      let token: string | undefined;
+      try {
+        const { fetchAuthSession } = await import("aws-amplify/auth");
+        const session = await fetchAuthSession();
+        token = session.tokens?.idToken?.toString();
+      } catch {
+        // No active session — request goes out unauthenticated.
+      }
+      return next(url, {
+        ...opts,
+        headers: {
+          ...opts.headers,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    },
+
+    // Reactive 401 handler: redirect to /login.
+    (next) => (url, opts) =>
+      next(url, opts).catch((error: { status?: number }) => {
+        if (error?.status === 401) {
+          window.location.href = "/login";
+        }
+        throw error;
+      }),
+  ]);

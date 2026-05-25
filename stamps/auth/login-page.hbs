@@ -1,0 +1,168 @@
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
+import { useAuthGuard } from '@/hooks/useAuth';
+
+type View = 'login' | 'signup' | 'confirm';
+type FormValues = { name: string; email: string; password: string; confirmPassword: string; code: string };
+type Status = { type: 'error' | 'success'; message: string } | null;
+
+const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 transition';
+const btnClass = 'w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60';
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const { loading } = useAuthGuard(false);
+  const [view, setView] = useState<View>('login');
+  const [status, setStatus] = useState<Status>(null);
+
+  const { register, handleSubmit, getValues, watch, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '', code: '' },
+  });
+
+  function switchView(v: View) {
+    reset({ name: getValues('name'), email: getValues('email'), password: '', confirmPassword: '', code: '' });
+    setStatus(null); setView(v);
+  }
+
+  async function onLogin({ email, password }: FormValues) {
+    setStatus(null);
+    try {
+      const { isSignedIn } = await signIn({ username: email, password });
+      if (isSignedIn) navigate('/');
+    } catch (err: unknown) {
+      setStatus({ type: 'error', message: err instanceof Error ? err.message : 'Sign in failed.' });
+    }
+  }
+
+  async function onSignup({ name, email, password }: FormValues) {
+    setStatus(null);
+    try {
+      const { nextStep } = await signUp({ username: email, password, options: { userAttributes: { email, name } } });
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') { setStatus(null); setView('confirm'); }
+    } catch (err: unknown) {
+      setStatus({ type: 'error', message: err instanceof Error ? err.message : 'Sign up failed.' });
+    }
+  }
+
+  async function onConfirm({ email, code }: FormValues) {
+    setStatus(null);
+    try {
+      const { isSignUpComplete } = await confirmSignUp({ username: email, confirmationCode: code });
+      if (isSignUpComplete) { switchView('login'); setStatus({ type: 'success', message: 'Account confirmed! You can now sign in.' }); }
+    } catch (err: unknown) {
+      setStatus({ type: 'error', message: err instanceof Error ? err.message : 'Confirmation failed.' });
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Sign in</h1>
+          <p className="mt-1 text-sm text-slate-400">Cognito Authentication</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl">
+          {view !== 'confirm' && (
+            <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
+              {(['login', 'signup'] as const).map((v) => (
+                <button key={v} type="button" onClick={() => switchView(v)}
+                  className={`flex-1 rounded-md py-1.5 text-sm font-medium transition ${
+                    view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}>
+                  {v === 'login' ? 'Sign In' : 'Sign Up'}
+                </button>
+              ))}
+            </div>
+          )}
+          {view === 'confirm' && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900">Check your email</h2>
+              <p className="mt-1 text-sm text-slate-500">We sent a 6-digit code to <span className="font-medium text-slate-700">{watch('email')}</span></p>
+            </div>
+          )}
+          {status && (
+            <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+              status.type === 'error' ? 'border-red-200 bg-red-50 text-red-600' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            }`}>{status.message}</div>
+          )}
+          {view === 'login' && (
+            <form onSubmit={handleSubmit(onLogin)} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                <input {...register('email', { required: true })} type="email" autoComplete="email" placeholder="you@example.com" className={inputClass} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
+                <input {...register('password', { required: true })} type="password" autoComplete="current-password" placeholder="••••••••" className={inputClass} />
+              </div>
+              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Signing in…' : 'Sign In'}</button>
+            </form>
+          )}
+          {view === 'signup' && (
+            <form onSubmit={handleSubmit(onSignup)} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Name</label>
+                <input {...register('name', { required: true })} type="text" autoComplete="name" placeholder="Jane Doe" className={inputClass} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                <input {...register('email', { required: true })} type="email" autoComplete="email" placeholder="you@example.com" className={inputClass} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
+                <input {...register('password', { required: true, minLength: 8 })} type="password" autoComplete="new-password" placeholder="••••••••" className={inputClass} />
+                {(() => {
+                  // RHF's watch() is stable; React Compiler can't verify it, so opt out here.
+                  // eslint-disable-next-line react-hooks/incompatible-library
+                  const pw = watch('password') ?? '';
+                  const rules = [
+                    { label: 'Min 8 chars', met: pw.length >= 8 },
+                    { label: 'Uppercase', met: /[A-Z]/.test(pw) },
+                    { label: 'Lowercase', met: /[a-z]/.test(pw) },
+                    { label: 'Number', met: /[0-9]/.test(pw) },
+                    { label: 'Symbol', met: /[^A-Za-z0-9]/.test(pw) },
+                  ];
+                  return (
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                      {rules.map(({ label, met }) => (
+                        <span key={label} className={`text-xs transition-colors ${met ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          {met ? '✓' : '·'} {label}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Confirm Password</label>
+                <input {...register('confirmPassword', { required: true, validate: (val) => val === getValues('password') || 'Passwords do not match.' })} type="password" autoComplete="new-password" placeholder="••••••••" className={inputClass} />
+                {errors.confirmPassword && <p className="mt-1.5 text-xs text-red-500">{errors.confirmPassword.message}</p>}
+              </div>
+              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Creating account…' : 'Create Account'}</button>
+            </form>
+          )}
+          {view === 'confirm' && (
+            <form onSubmit={handleSubmit(onConfirm)} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Verification Code</label>
+                <Controller name="code" control={control} rules=\{{ required: true, minLength: { value: 6, message: 'Must be 6 digits.' } }}
+                  render={({ field }) => (
+                    <input {...field} type="text" inputMode="numeric" maxLength={6} placeholder="123456"
+                      onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                      className={`${inputClass} text-center font-mono text-lg tracking-widest`} />
+                  )} />
+                {errors.code && <p className="mt-1.5 text-xs text-red-500">{errors.code.message}</p>}
+              </div>
+              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Verifying…' : 'Confirm Account'}</button>
+              <button type="button" onClick={() => switchView('signup')} className="w-full text-sm text-slate-500 transition hover:text-slate-700">Back to sign up</button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

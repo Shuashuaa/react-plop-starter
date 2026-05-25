@@ -1,0 +1,28 @@
+// Hand-written Amplify config sourced from Vite env vars (VITE_*).
+// The four VITE_ values are populated by `npm run sync-env`, which reads the
+// ampx-generated amplify_outputs.json and writes them into .env.local.
+const amplifyOutputs = {
+  auth: {
+    user_pool_id: import.meta.env.VITE_USER_POOL_ID,
+    aws_region: import.meta.env.VITE_AWS_REGION,
+    user_pool_client_id: import.meta.env.VITE_USER_POOL_CLIENT_ID,
+    identity_pool_id: import.meta.env.VITE_IDENTITY_POOL_ID,
+    mfa_methods: [] as string[],
+    standard_required_attributes: ['email'] as string[],
+    username_attributes: ['email'] as string[],
+    user_verification_types: ['email'] as string[],
+    groups: [] as string[],
+    mfa_configuration: 'NONE',
+    password_policy: {
+      min_length: 8,
+      require_lowercase: true,
+      require_numbers: true,
+      require_symbols: true,
+      require_uppercase: true,
+    },
+    unauthenticated_identities_enabled: true,
+  },
+  version: '1.4',
+};
+
+export default amplifyOutputs;

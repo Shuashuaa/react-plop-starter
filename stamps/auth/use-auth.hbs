@@ -1,0 +1,38 @@
+import { useEffect, useState } from 'react';
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+import { useNavigate } from 'react-router-dom';
+
+type AuthUser = { username: string; userId: string; name: string };
+
+/**
+ * Mount-once auth bootstrap. `required: true` guards a protected route
+ * (redirect to /login when signed out); `required: false` guards a public-only
+ * route like /login (redirect to / when already signed in).
+ */
+export function useAuthGuard(required: boolean) {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(async ({ username, userId }) => {
+        if (!required) {
+          navigate('/', { replace: true });
+        } else {
+          const attrs = await fetchUserAttributes();
+          setUser({ username, userId, name: attrs.name ?? username });
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (required) {
+          navigate('/login', { replace: true });
+        } else {
+          setLoading(false);
+        }
+      });
+  }, [navigate, required]);
+
+  return { user, loading };
+}
