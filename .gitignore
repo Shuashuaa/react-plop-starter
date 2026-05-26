@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# env
+.env
+.env.*
+!.env.example
+
+# amplify
+.amplify
+amplify_outputs.json
+amplifyconfiguration*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
