@@ -17,8 +17,8 @@ When you run `npm run plop` and enter "user", here's how the naming transforms:
 | File name (hook) | `use{{pascalCase name}}.ts` | `useUser.ts` | Hook file |
 | API endpoint (single) | `/{{pluralize (kebabCase name)}}/:id` | `/users/123` | GET single user |
 | API endpoint (list) | `/{{pluralize (kebabCase name)}}` | `/users` | GET all users |
-| SWR cache key (single) | `["{{kebabCase name}}", id]` | `["user", "123"]` | Cache key for single item |
-| SWR cache key (list) | `"{{pluralize (kebabCase name)}}-list"` | `"users-list"` | Cache key for list |
+| Query key (single) | `["{{kebabCase name}}", id]` | `["user", "123"]` | TanStack Query key for single item |
+| Query key (list) | `["{{pluralize (kebabCase name)}}"]` | `["users"]` | TanStack Query key for list |
 
 ## Helper Functions
 
@@ -67,27 +67,28 @@ export const userService = {
 
 **Why camelCase?** JavaScript/TypeScript convention for variables and object names.
 
-### 3. SWR Cache Keys (kebab-case)
+### 3. TanStack Query Keys (kebab-case)
 
 ```typescript
-// SWR keys use kebab-case for consistency and readability
+// Query keys use kebab-case for consistency and readability
 export const useUser = (id: string | null) => {
-  return useSWR(
-    id ? ["user", id] : null,  // ✅ kebab-case: "user"
-    () => userService.getById(id!)
-  );
+  return useQuery({
+    queryKey: ["user", id],          // ✅ kebab-case: "user"
+    queryFn: () => userService.getById(id!),
+    enabled: !!id,
+  });
 };
 
 export const useUsers = () => {
-  return useSWR(
-    "users-list",  // ✅ kebab-case: "users-list"
-    () => userService.getAll()
-  );
+  return useQuery({
+    queryKey: ["users"],             // ✅ kebab-case plural: "users"
+    queryFn: () => userService.getAll(),
+  });
 };
 ```
 
-**Why kebab-case?** 
-- **Consistency**: Matches URL patterns (`/users`, `/user-profiles`)
-- **Readability**: Easy to read in DevTools and debugging
-- **SEO-friendly**: If cache keys are ever exposed in URLs or logs, they're human-readable
-- **Convention**: Standard for identifiers that might be serialized or logged
+**Why this key shape?**
+- **Consistency**: Matches URL patterns (`/users`, `/user-profiles`).
+- **Invalidation**: `["users"]` for the list, `["user", id]` for an item — mutations
+  invalidate the exact keys they affect (see the generated `use<Name>.ts` hooks).
+- **Readability**: Easy to read in the React Query Devtools.

@@ -16,24 +16,23 @@ npm install
 
 Make sure you have these key dependencies:
 - `wretch` - HTTP client
-- `swr` - Data fetching hooks
+- `@tanstack/react-query` - Data fetching hooks
 - `zod` - Schema validation
+- `react-router-dom` - Routing
 - `plop` - Code generator
 - `inflection` - Pluralization helper
 
-## Step 2: Create the API Service
+## Step 2: Point the API client at JSONPlaceholder
 
-Create `src/services/api.ts`:
+The shared client already lives at `src/lib/api/index.ts` (wretch + config guard + auth +
+401 logout). It reads its base URL from `VITE_API_URL`. Set it in `.env.local`:
 
-```typescript
-import wretch from "wretch";
-
-export const api = wretch("https://jsonplaceholder.typicode.com")
-  .options({ credentials: "include" })
-  .errorType("json");
+```
+VITE_API_URL=https://jsonplaceholder.typicode.com
 ```
 
-This sets up the base API client pointing to JSONPlaceholder.
+Restart `npm run dev` after editing `.env.local`. The `TanstackQueryProvider` is already
+mounted in `src/main.tsx`, so query hooks work out of the box.
 
 ## Step 3: Generate the User Feature with Plop
 
@@ -49,8 +48,12 @@ When prompted:
 This automatically creates:
 - `src/features/user/user.schema.ts` - Zod schemas
 - `src/features/user/user.service.ts` - API service methods
-- `src/features/user/useUser.ts` - SWR hooks
+- `src/features/user/useUser.ts` - TanStack Query hooks
 - `src/features/user/index.ts` - Barrel exports
+
+> Tip: `npx plop Feature "User"` does all of the below in one shot — schema + service +
+> hooks + form + table + a CRUD `Manager` + a routed page. The steps below show the
+> pieces individually.
 
 ## Step 4: Customize the User Schema
 
@@ -104,75 +107,64 @@ export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
 
 The generated `src/features/user/user.service.ts` should already work with JSONPlaceholder:
 
+The service imports the shared client from `@/lib/api` and carries an
+`[AI GUARDRAIL DIRECTIVE]` header plus an `AI GENERATION ZONE (wiring)` block where the
+`ROUTES`, `UPDATE_METHOD`, and `unwrapItem`/`unwrapList` defaults are edited to match the
+real backend. Its `ROUTES` default to the ECV convention (`/users/get/:id`, `/users/insert`,
+…). For the plain JSONPlaceholder REST shape, adjust the wiring zone to:
+
 ```typescript
-import { api } from "@/services/api";
-import { z } from "zod";
-import { 
-    UserSchema, 
-    type User,
-    type CreateUserInput,
-    type UpdateUserInput 
-} from "./user.schema";
-
-export const userService = {
-    getById: async (id: string): Promise<User> => {
-        const data = await api.url(`/users/${id}`).get().json();
-        return UserSchema.parse(data);
-    },
-
-    getAll: async (): Promise<User[]> => {
-        const data = await api.url("/users").get().json();
-        return z.array(UserSchema).parse(data);
-    },
-
-    create: async (payload: CreateUserInput): Promise<User> => {
-        const data = await api.url("/users").post(payload).json();
-        return UserSchema.parse(data);
-    },
-
-    update: async (id: string, payload: UpdateUserInput): Promise<User> => {
-        const data = await api.url(`/users/${id}`).patch(payload).json();
-        return UserSchema.parse(data);
-    },
-
-    delete: async (id: string): Promise<void> => {
-        await api.url(`/users/${id}`).delete().res();
-    }
+import { api } from "@/lib/api";
+// ...
+const ROUTES = {
+  list: "/users",
+  getById: (id: string) => `/users/${id}`,
+  create: "/users",
+  update: (id: string) => `/users/${id}`,
+  delete: (id: string) => `/users/${id}`,
 };
+
+const UPDATE_METHOD = "patch" as "put" | "patch";
+
+// JSONPlaceholder returns the object/array directly — no envelope to unwrap.
+const unwrapItem = (data: unknown): unknown => data;
+const unwrapList = (data: unknown): unknown => data;
 ```
+
+Leave the CRUD method bodies below the wiring zone unchanged.
 
 ## Step 6: Verify the Generated Hooks
 
 The generated `src/features/user/useUser.ts` provides these hooks:
 
 ```typescript
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "./user.service";
 
 // Hook for a single user
 export const useUser = (id: string | null) => {
-  return useSWR(
-    id ? ["user", id] : null, 
-    () => userService.getById(id!),
-    { revalidateOnFocus: false }
-  );
+  return useQuery({
+    queryKey: ["user", id],
+    queryFn: () => userService.getById(id!),
+    enabled: !!id,
+  });
 };
 
 // Hook for the full list
 export const useUsers = () => {
-  return useSWR(
-    "users-list", 
-    () => userService.getAll(),
-    { revalidateOnFocus: false }
-  );
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: () => userService.getAll(),
+  });
 };
 ```
 
-Available hooks:
+Available hooks (all generated):
 - `useUser(id)` - Fetch single user
 - `useUsers()` - Fetch all users
-- `useUpdateUser(id)` - Update user mutation (if using full template)
-- `useDeleteUser()` - Delete user mutation (if using full template)
+- `useCreateUser()` - Create mutation (invalidates `["users"]`)
+- `useUpdateUser()` - Update mutation, called as `mutate({ id, payload })`
+- `useDeleteUser()` - Delete mutation, called as `mutate(id)`
 
 ## Step 7: Create a Component to Display Users
 
@@ -215,24 +207,18 @@ export const UserList = () => {
 };
 ```
 
-## Step 8: Update App.tsx
+## Step 8: Register a route
 
-Replace the default `src/App.tsx` content:
+Don't hand-edit the router by adding components manually. Generate a page — it registers its
+own route and nav link in `src/App.tsx` via the `PLOP_INJECT_*` markers:
 
-```typescript
-import { UserList } from "./components/UserList";
-
-function App() {
-  return (
-    <div>
-      <h1>My App</h1>
-      <UserList />
-    </div>
-  );
-}
-
-export default App;
+```bash
+npx plop Page "User"     # creates src/pages/UserPage.tsx, wires /user
 ```
+
+Or skip Steps 3–8 entirely with `npx plop Feature "User"`, which generates the schema,
+service, hooks, form, a table, a CRUD `Manager`, and the routed page in one shot. Render your
+`UserList` (or the generated table) inside the page's `AI GENERATION ZONE`.
 
 ## Step 9: Run the Development Server
 
@@ -249,7 +235,7 @@ You should see a table displaying 10 users from JSONPlaceholder!
 Your generated feature includes:
 
 ✅ Type-safe API calls with Zod validation  
-✅ Automatic data fetching with SWR  
+✅ Automatic data fetching with TanStack Query  
 ✅ CRUD operations (Create, Read, Update, Delete)  
 ✅ Optimistic updates and cache management  
 ✅ Error handling and loading states  
@@ -283,11 +269,10 @@ export const UserDetail = ({ userId }: { userId: string }) => {
 ## Summary
 
 1. Install dependencies
-2. Create `src/services/api.ts` with base URL
-3. Run `npm run plop` and enter "User"
-4. Customize the schema to match JSONPlaceholder structure
-5. Create a component using the generated hooks
-6. Import and use the component in App.tsx
-7. Run `npm run dev`
+2. Set `VITE_API_URL` in `.env.local`
+3. Run `npm run plop` and enter "User" (or use `Feature` for the whole stack)
+4. Customize the schema and the service wiring zone to match the API
+5. Generate a page (`npx plop Page "User"`) — it registers its own route
+6. Run `npm run dev`
 
 That's it! The plop generator handles all the boilerplate, and you just wire up the UI.
