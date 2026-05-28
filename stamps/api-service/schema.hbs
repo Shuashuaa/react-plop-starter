@@ -1,34 +1,24 @@
 import { z } from "zod";
 
-/**
- * Core Entity Schema
- */
 export const {{pascalCase name}}Schema = z.object({
     id: z.string(),
     createdAt: z.string().datetime().optional(),
     updatedAt: z.string().datetime().optional(),
-    // Default field so the schema isn't empty on generation
-    name: z.string().min(1, "Name is required"), 
+    {{#each fields}}
+    {{camelCase this}}: {{zodType this}},
+    {{/each}}
 });
 
 export type {{pascalCase name}} = z.infer<typeof {{pascalCase name}}Schema>;
 
-/**
- * Create Input (POST)
- * Removes server-generated fields like id and timestamps
- */
-export const Create{{pascalCase name}}Schema = {{pascalCase name}}Schema.omit({ 
-    id: true, 
+export const Create{{pascalCase name}}Schema = {{pascalCase name}}Schema.omit({
+    id: true,
     createdAt: true,
-    updatedAt: true
+    updatedAt: true,
 });
 
 export type Create{{pascalCase name}}Input = z.infer<typeof Create{{pascalCase name}}Schema>;
 
-/**
- * Update Input (PATCH)
- * Makes all fields optional so you can perform partial updates
- */
 export const Update{{pascalCase name}}Schema = Create{{pascalCase name}}Schema.partial();
 
 export type Update{{pascalCase name}}Input = z.infer<typeof Update{{pascalCase name}}Schema>;
