@@ -1,0 +1,157 @@
+/**
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. This client component owns CRUD UI state (create/edit modal, delete confirm)
+ *    and wires the use{{pascalCase name}} mutation hooks. DO NOT fetch data here —
+ *    the table component owns the list query.
+ * 2. DELETE works out of the box (id only) — do not change its flow.
+ * 3. CREATE/EDIT reuse the same <{{pascalCase name}}Form/>. The form WILL submit on
+ *    click as-is; customise its fields in {{pascalCase name}}Form.tsx + the schema
+ *    to match your real payload. DO NOT change the mutateAsync calls here.
+ * 4. Edit modal markup, button labels, and toolbar layout are the AI GENERATION
+ *    ZONE — restyle there. Keep the handlers and hook calls intact.
+ */
+
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import {
+  useCreate{{pascalCase name}},
+  useUpdate{{pascalCase name}},
+  useDelete{{pascalCase name}},
+  type {{pascalCase name}},
+  type Create{{pascalCase name}}Input,
+} from "@/features/{{camelCase name}}";
+import { {{tableComponent}} } from "@/components/{{tableComponent}}";
+import { {{pascalCase name}}Form } from "@/components/{{pascalCase name}}Form";
+import { dangerButtonClass, secondaryButtonClass } from "@/components/ui";
+
+type Mode = "create" | "edit" | null;
+
+export const {{pascalCase name}}Manager = () => {
+  const createMutation = useCreate{{pascalCase name}}();
+  const updateMutation = useUpdate{{pascalCase name}}();
+  const deleteMutation = useDelete{{pascalCase name}}();
+
+  const [mode, setMode] = useState<Mode>(null);
+  const [selected, setSelected] = useState<{{pascalCase name}} | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{{pascalCase name}} | null>(null);
+
+  const closeForm = () => {
+    setMode(null);
+    setSelected(null);
+  };
+
+  // Same form handles create and edit. Create input satisfies the (partial)
+  // update payload, so we forward `data` unchanged.
+  const handleSubmit = async (data: Create{{pascalCase name}}Input) => {
+    if (mode === "edit" && selected) {
+      await updateMutation.mutateAsync({ id: selected.id, payload: data });
+    } else {
+      await createMutation.mutateAsync(data);
+    }
+    closeForm();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteMutation.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* ====================================================================
+        * AI GENERATION ZONE (toolbar): page-level actions. Restyle freely.
+        * ==================================================================== */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setSelected(null);
+            setMode("create");
+          }}
+          className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-3 py-2 text-sm transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          New {{titleCase name}}
+        </button>
+      </div>
+      {/* ===================== END AI GENERATION ZONE (toolbar) ============= */}
+
+      <{{tableComponent}}
+        onEdit={(item) => {
+          setSelected(item);
+          setMode("edit");
+        }}
+        onDelete={(item) => setDeleteTarget(item)}
+      />
+
+      {/* Create / Edit modal — shared form */}
+      {mode && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4"
+          onClick={closeForm}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">
+                {mode === "edit" ? "Edit {{titleCase name}}" : "New {{titleCase name}}"}
+              </h2>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="text-slate-400 hover:text-slate-700"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* The form remounts per target so default values reset correctly. */}
+            <{{pascalCase name}}Form
+              key={selected?.id ?? "new"}
+              onSubmit={handleSubmit}
+              defaultValues={mode === "edit" && selected ? selected : undefined}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal — works as-is */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Delete {{lowerCase name}}?</h2>
+            <p className="text-sm text-slate-500 mb-6">
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className={`${secondaryButtonClass} w-auto px-4`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleteMutation.isPending}
+                className={`${dangerButtonClass} px-4`}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,98 +1,99 @@
-import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-} from "@tanstack/react-table";
+/**
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. DO NOT change the loading/error branches or the use{{pluralize (pascalCase name)}}() data fetch.
+ * 2. Columns live in two AI GENERATION ZONES: header <th>s and row <td>s — keep
+ *    their count in sync and update colSpan to match.
+ * 3. Render only fields that exist on the {{pascalCase name}} schema.
+ * 4. onEdit/onDelete are optional row-action callbacks (wired by {{pascalCase name}}Manager).
+ *    When passed, an Actions column renders. DO NOT mutate data here — call the props.
+ */
+
+import { Pencil, Trash2 } from "lucide-react";
 import { use{{pluralize (pascalCase name)}}, type {{pascalCase name}} } from "@/features/{{camelCase name}}";
 
 interface {{pascalCase name}}TableProps {
-    onEdit?: (item: {{pascalCase name}}) => void;
-    onDelete?: (id: string) => void;
+  onEdit?: (item: {{pascalCase name}}) => void;
+  onDelete?: (item: {{pascalCase name}}) => void;
 }
 
-const columnHelper = createColumnHelper<{{pascalCase name}}>();
+export const {{pascalCase name}}Table = ({ onEdit, onDelete }: {{pascalCase name}}TableProps = {}) => {
+  const { data: {{camelCase (pluralize name)}}, error, isLoading } = use{{pluralize (pascalCase name)}}();
+  const showActions = Boolean(onEdit || onDelete);
 
-export const {{pascalCase name}}Table = ({ onEdit, onDelete }: {{pascalCase name}}TableProps) => {
-    const { data: {{camelCase (pluralize name)}} = [], isLoading, error } = use{{pluralize (pascalCase name)}}();
+  if (isLoading) {
+    return <div className="text-sm text-slate-500 p-6">Loading {{lowerCase (pluralize name)}}...</div>;
+  }
 
-    const columns = [
-        columnHelper.accessor("id", {
-            header: "ID",
-            cell: (info) => info.getValue(),
-        }),
-        {{#each fields}}
-        columnHelper.accessor("{{camelCase this}}", {
-            header: "{{label this}}",
-            cell: (info) => info.getValue(),
-        }),
-        {{/each}}
-        ...(onEdit || onDelete
-            ? [
-                columnHelper.display({
-                    id: "actions",
-                    header: "",
-                    cell: ({ row }) => (
-                        <div className="flex gap-2">
-                            {onEdit && (
-                                <button
-                                    onClick={() => onEdit(row.original)}
-                                    className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
-                                >
-                                    Edit
-                                </button>
-                            )}
-                            {onDelete && (
-                                <button
-                                    onClick={() => onDelete(row.original.id)}
-                                    className="text-xs px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50"
-                                >
-                                    Delete
-                                </button>
-                            )}
-                        </div>
-                    ),
-                }),
-              ]
-            : []),
-    ];
-
-    const table = useReactTable({
-        data: {{camelCase (pluralize name)}},
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-    });
-
-    if (isLoading) return <div>Loading {{lowerCase (pluralize name)}}...</div>;
-    if (error) return <div className="text-red-600">❌ Error: {error.message}</div>;
-
+  if (error) {
     return (
-        <div className="p-5">
-            <h2 className="text-2xl font-bold mb-4">{{titleCase (pluralize name)}}</h2>
-            <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                        <tr key={headerGroup.id} className="bg-gray-100">
-                            {headerGroup.headers.map((header) => (
-                                <th key={header.id} className="p-2 border border-gray-300 text-left">
-                                    {flexRender(header.column.columnDef.header, header.getContext())}
-                                </th>
-                            ))}
-                        </tr>
-                    ))}
-                </thead>
-                <tbody>
-                    {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id} className="hover:bg-gray-50">
-                            {row.getVisibleCells().map((cell) => (
-                                <td key={cell.id} className="p-2 border border-gray-300">
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 m-6">
+        Error: {error instanceof Error ? error.message : "Failed to load"}
+      </div>
     );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-slate-50">
+            {/* AI GENERATION ZONE (headers): @AI_TASK one <th> per column. */}
+            <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-left">
+              ID
+            </th>
+            <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-left">
+              Name
+            </th>
+            {/* END AI GENERATION ZONE (headers) */}
+            {{lb}}showActions && (
+              <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-right">
+                Actions
+              </th>
+            ){{rb}}
+          </tr>
+        </thead>
+        <tbody>
+          {{lb}}{{camelCase (pluralize name)}}?.length === 0 && (
+            <tr>
+              <td colSpan={{lb}}2 + (showActions ? 1 : 0){{rb}} className="text-center py-10">
+                <p className="text-sm text-slate-500">No {{lowerCase (pluralize name)}} found</p>
+              </td>
+            </tr>
+          ){{rb}}
+          {{lb}}{{camelCase (pluralize name)}}?.map((item) => (
+            <tr key={{lb}}item.id{{rb}} className="hover:bg-slate-50 border-t border-slate-200">
+              {/* AI GENERATION ZONE (cells): @AI_TASK one <td> per header column. */}
+              <td className="text-sm text-slate-700 px-4 py-3">{{lb}}item.id{{rb}}</td>
+              <td className="text-sm text-slate-700 px-4 py-3">{{lb}}item.name{{rb}}</td>
+              {/* END AI GENERATION ZONE (cells) */}
+              {{lb}}showActions && (
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  {{lb}}onEdit && (
+                    <button
+                      type="button"
+                      onClick={{lb}}() => onEdit(item){{rb}}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 mr-3"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit
+                    </button>
+                  ){{rb}}
+                  {{lb}}onDelete && (
+                    <button
+                      type="button"
+                      onClick={{lb}}() => onDelete(item){{rb}}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  ){{rb}}
+                </td>
+              ){{rb}}
+            </tr>
+          )){{rb}}
+        </tbody>
+      </table>
+    </div>
+  );
 };

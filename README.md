@@ -1,207 +1,300 @@
-<h1 align="center">React + Plop Code Generator</h1>
+# ReactJS Starter — with Codegen
+
+React 19 + Vite boilerplate with built-in code generation via Plop. Scaffold full feature modules (schema + service + hooks + UI + CRUD) with a single command, then fill only the marked `[AI GENERATION ZONE]` sections.
 
 <p align="center">
   <img src="public/plop+react.gif" alt="Plop + React" />
 </p>
 
-A React 19 + TypeScript + Vite starter with Plop.js code generation. One command scaffolds a complete, type-safe CRUD feature — schema, service, hooks, table, form, and page — wired to your AWS Lambda + DynamoDB backend.
+The React counterpart of the Next.js Plop starter — same generators and AI-guardrail conventions, adapted for Vite + react-router-dom.
 
-## Features
+## Get Started
+```
+> npx @ecv-ph-tech-team/claude-init scaffold-frontend --name name-of-the-project
+```
 
-- ⚡ **Vite** — Lightning-fast dev server and builds
-- ⚛️ **React 19** — Latest React
-- 📘 **TypeScript** — Strict mode, path aliases
-- 🎨 **Tailwind CSS 4** — Utility-first styling
-- 🔄 **TanStack Query** — Data fetching, mutations, infinite scroll
-- 📊 **TanStack Table** — Headless, type-safe tables
-- 🌐 **Wretch** — Lightweight HTTP client
-- ✅ **Zod** — Runtime schema validation on every API response
-- 🎯 **React Hook Form** — Form state and validation
-- 🚀 **Plop.js** — Code generation from Handlebars templates
+```
+-------- You will see something like this - Select React.js --------
 
-## Quick Start
+> npx @ecv-ph-tech-team/claude-init scaffold-frontend --name name-of-the-project
+
+ECV Frontend Scaffold
+Creates a new ECV frontend app from a GitLab boilerplate template.
+
+? Choose a frontend template: » - Use arrow-keys. Return to submit.
+>   React.js   (Vite + TypeScript + Tailwind)
+    Next.js (TypeScript + Tailwind) SSR
+    Vue.js  (Vite + TypeScript + Tailwind)
+    Nuxt.js (TypeScript + Tailwind) SSR
+
+--------------------------------------------------------------------
+```
+```
+// cd to project
+> cd name-of-the-project
+
+// to get the latest claude skills for frontend
+> npx @ecv-ph-tech-team/claude-init@latest
+```
+
+## Start generating
+```
+npm run plop "<Name>"
+```
+
+## What each generator creates
+
+Run `npm run plop` (pick interactively) or `npx plop <Generator> "<Name>"`. Example name `Product`:
+
+| Command | Files created |
+|---|---|
+| `npx plop Resource "Product"` | `src/features/product/product.schema.ts`<br>`src/features/product/product.service.ts`<br>`src/features/product/useProduct.ts`<br>`src/features/product/index.ts` |
+| `npx plop Form "Product"` | `src/components/ProductForm.tsx` |
+| `npx plop Table "Product"` | `src/components/ProductTable.tsx` |
+| `npx plop DataTable "Product"` | `src/components/ProductDataTable.tsx` |
+| `npx plop Page "Product"` | `src/pages/ProductPage.tsx` — also registers a route + nav link in `src/App.tsx` |
+| `npx plop Feature "Product"` | all of `Resource` + `src/components/ProductForm.tsx` + chosen table (`ProductDataTable.tsx` / `ProductTable.tsx`) + `src/components/ProductManager.tsx` (CRUD wrapper) + `src/pages/ProductPage.tsx` |
+| `npx plop Auth` | `amplify/backend.ts`, `amplify/auth/resource.ts`, `amplify/package.json`, `amplify/tsconfig.json`, `amplify_outputs.ts`, `src/hooks/useAuth.ts`, `src/pages/LoginPage.tsx` — also force-replaces `src/App.tsx`, `src/main.tsx`, `src/lib/api/index.ts`, runs `npm run sandbox` |
+
+`Feature` prompts for table kind (DataTable / Table / None). With **None**, no table or Manager — page renders a placeholder.
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Framework | Vite + React 19 + TypeScript |
+| Routing | react-router-dom (generated pages self-register) |
+| Data fetching | TanStack Query v5 + Wretch |
+| Tables | TanStack Table v8 |
+| Forms | React Hook Form + Zod |
+| Styling | Tailwind CSS v4 (`@tailwindcss/postcss`, no config file) |
+| Codegen | Plop + Handlebars |
+| Auth | AWS Amplify Gen 2 + Cognito (opt-in via `Auth` generator) |
+
+## Layout
+
+Source lives under **`src/`**. Path alias `@/*` → `./src/*`. Feature/UI code: `src/features/`, `src/components/`, `src/lib/`, `src/pages/`, `src/hooks/`.
+
+---
+
+## Setup
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Copy env template and set your API base URL
-cp .env.example .env
+# 2. Set environment variables
+cp .env.example .env.local
+# Edit .env.local → VITE_API_URL=https://your-backend.com
+# (Cognito vars are auto-filled by the Auth generator — leave them for now)
 
-# Start development server
-npm run dev
-
-# Generate code
-npm run plop
+# 3. Start dev server
+npm run dev          # http://localhost:5173
 ```
 
-## Generators
+---
 
-All generators ask for a **resource name** and **fields** (comma-separated). Field types and validators are inferred automatically from the field name — `price` → `z.number()`, `isActive` → `z.boolean()`, `email` → `z.string().email()`.
+## Code Generation (Plop)
 
-### 1. Resource
-Scaffolds the full API layer: Zod schema, Wretch service, and TanStack Query hooks.
+Run a generator by name with the resource name as an argument:
 
 ```bash
-npm run plop
-# › Resource
-# › Product
-# › name, price, description, isActive
+npx plop Resource  "<Name>"
+npx plop Form      "<Name>"
+npx plop Table     "<Name>"
+npx plop DataTable "<Name>"
+npx plop Page      "<Name>"
+npx plop Feature   "<Name>"
+npx plop Auth
 ```
 
-Generates:
+Or run `npm run plop` with no args to pick interactively.
+
+| Generator | Creates |
+|---|---|
+| `Resource` | `src/features/<name>/` — schema + service + hooks + barrel index |
+| `Form` | `src/components/<Name>Form.tsx` |
+| `Table` | `src/components/<Name>Table.tsx` — plain HTML table |
+| `DataTable` | `src/components/<Name>DataTable.tsx` — TanStack Table, sort/filter/paginate |
+| `Page` | `src/pages/<Name>Page.tsx` + route + nav link in `src/App.tsx` |
+| `Feature` | All of the Above |
+| `Auth` | Amplify Gen 2 backend + Cognito frontend scaffold |
+
+### After running a generator
+
+1. **Read** the generated file(s).
+2. Find the `[AI GUARDRAIL DIRECTIVE]` header — it lists what is locked.
+3. Edit **only** inside the `AI GENERATION ZONE` markers.
+4. **Do not** rename exports, change method/hook signatures, alter query keys, or swap the `api` client — downstream files depend on them.
+
+The boilerplate is the contract. Stay inside the zone.
+
+### Example: scaffold a full feature
+
+```bash
+npx plop Feature "Product"
+# > Which table component?  DataTable | Table | None
+```
+
+Output in `src/features/product/`:
+
 ```
 src/features/product/
-├── product.schema.ts    # Zod schemas + TypeScript types
-├── product.service.ts   # CRUD + paginated fetch (DynamoDB cursor)
-├── useProduct.ts        # useQuery, useMutation, useInfiniteQuery hooks
-└── index.ts             # Barrel export
+├── product.schema.ts     # Zod types (ProductSchema, ProductPayload, etc.)
+├── product.service.ts    # Wretch API calls (getProduct, listProducts, createProduct, ...)
+├── useProduct.ts         # TanStack Query hooks
+└── index.ts              # Barrel exports
 ```
 
-Hooks included: `useProduct(id)` · `useProducts()` · `useInfiniteProducts()` · `useCreateProduct()` · `useUpdateProduct()` · `useDeleteProduct()`
+Plus `src/components/ProductForm.tsx`, a table (`ProductDataTable` or `ProductTable`), a `ProductManager.tsx` CRUD wrapper, and `src/pages/ProductPage.tsx`.
 
-### 2. Table
-Creates a TanStack Table component with typed columns, loading/error states, and optional Edit/Delete action buttons.
+- **DataTable / Table** → also generates a `<Name>Manager` component wiring full CRUD: New/Edit via the shared form in a modal, inline Delete with a confirm modal. The page renders the Manager.
+- **None** → the page renders a placeholder.
+
+### Generated hooks (`useProduct.ts`)
+
+```ts
+useProduct(id)          // GET /products/:id
+useProducts()           // GET /products
+useCreateProduct()      // POST /products  → invalidates list
+useUpdateProduct()      // PUT/PATCH /products/:id → invalidates detail + list
+useDeleteProduct()      // DELETE /products/:id → invalidates list
+```
+
+All mutations auto-invalidate related queries on success.
+
+### `Auth` generator — Amplify Gen 2 + Cognito
 
 ```bash
-npm run plop
-# › Table
-# › Product
-# › name, price, isActive
+npx plop Auth
+# > Cognito — email + password
 ```
 
-Generates: `src/components/ProductTable.tsx`
+Scaffolds the **Amplify Gen 2 backend** and the **frontend auth layer**:
 
-The table accepts optional `onEdit` and `onDelete` props — pass them from the page to enable action buttons.
+| File | Description |
+|---|---|
+| `amplify/backend.ts` | Gen 2 backend definition (consumed by `ampx sandbox`) |
+| `amplify/auth/resource.ts` | Cognito auth resource (email + password) |
+| `amplify/package.json`, `amplify/tsconfig.json` | Backend workspace config |
+| `amplify_outputs.ts` | Env-backed Amplify config (no credentials in source) |
+| `src/hooks/useAuth.ts` | `useAuthGuard(required)` — protects routes client-side |
+| `src/pages/LoginPage.tsx` | Login + Signup + Email confirmation flow |
 
-### 3. Form
-Creates a React Hook Form + Zod form. Input types are inferred from field names (`password` → `type="password"`, `price` → `type="number"`, etc.).
+**Generator also automatically:**
+- **Force-replaces** `src/App.tsx` (protected dashboard + `/login` route), `src/main.tsx`, and `src/lib/api/index.ts`
+- Swaps the api client auth middleware to Amplify `fetchAuthSession`
+- Runs `npm run sandbox` — wraps `ampx sandbox` and auto-syncs `.env.local` on each deploy
 
-```bash
-npm run plop
-# › Form
-# › Product
-# › name, price, description, isActive
-```
+Run `Auth` **early**, before adding feature pages — `Page`/`Feature` still inject cleanly afterward via the `PLOP_INJECT_*` markers.
 
-Generates: `src/components/ProductForm.tsx`
+**Re-running:** Generator detects existing auth files and aborts with a list. Delete the listed files to re-scaffold.
 
-### 4. Page
-Scaffolds a full CRUD page wiring the table and form together — create toggle, inline edit form, delete with confirm dialog.
-
-```bash
-npm run plop
-# › Page
-# › Product
-# › name   (field shown in the edit header)
-```
-
-Generates: `src/pages/ProductPage.tsx`
-
-## Recommended workflow
-
-```
-plop → Resource   schema + service + hooks
-plop → Table      data table with Edit/Delete
-plop → Form       validated form
-plop → Page       CRUD page wiring everything together
-```
-
-Then import the page into `App.tsx`:
-
-```tsx
-import { ProductPage } from '@/pages/ProductPage';
-
-function App() {
-  return <ProductPage />;
-}
-```
+---
 
 ## Project Structure
 
 ```
-├── stamps/
-│   ├── api-service/
-│   │   ├── hook.hbs        # TanStack Query hooks template
-│   │   ├── schema.hbs      # Zod schema template
-│   │   └── service.hbs     # Wretch service template
-│   └── components/
-│       ├── table.hbs       # TanStack Table component template
-│       ├── form.hbs        # React Hook Form template
-│       └── page.hbs        # Full CRUD page template
+root/
+├── stamps/                  # Plop Handlebars templates
+│   ├── api-service/         # schema.hbs · service.hbs · hook.hbs
+│   ├── components/          # form.hbs · table.hbs · data-table.hbs · manager.hbs
+│   ├── pages/               # page.hbs
+│   └── auth/                # Amplify Gen 2 + login / useAuth / api-client
+├── scripts/
+│   ├── sandbox.mjs          # Wraps `ampx sandbox`, auto-syncs env on deploy
+│   └── sync-amplify-env.mjs # Upserts Cognito vars into .env.local
 ├── src/
-│   ├── features/           # Generated API modules
+│   ├── features/            # generated feature modules
 │   ├── components/
-│   │   └── ApiTester.tsx   # In-browser endpoint tester
-│   ├── pages/              # Generated CRUD pages
-│   ├── services/
-│   │   └── api.ts          # Wretch client (reads VITE_API_BASE_URL)
-│   └── App.tsx
-├── plopfile.mjs            # Generator definitions + Handlebars helpers
-├── .env.example            # Environment variable template
-├── QUICKSTART.md           # Step-by-step CRUD app guide
-├── INTEGRATION.md          # API contract + DynamoDB patterns
-└── NAMING_CONVENTIONS.md   # Plop helper reference
+│   │   ├── ui/index.ts      # Shared Tailwind class constants
+│   │   └── *Form / *Table / *Manager   (generated)
+│   ├── lib/
+│   │   ├── api/             # Wretch HTTP client
+│   │   ├── tanstack-query/  # QueryClient provider
+│   │   └── utils/cn.ts      # clsx + tailwind-merge
+│   ├── hooks/               # useAuth added by Auth generator
+│   ├── pages/               # generated pages
+│   ├── App.tsx              # router shell (PLOP_INJECT_* markers)
+│   └── main.tsx
+├── amplify/                 # Amplify Gen 2 backend (added by Auth generator)
+├── plopfile.mjs
+└── package.json
 ```
 
-## Environment
+---
 
-```env
-# .env
-VITE_API_BASE_URL=https://your-api-gateway-url.amazonaws.com/prod
+## Routing
+
+`react-router-dom` powers routing (Vite has no file-based routing). The router shell lives in `src/App.tsx`; `Page` and `Feature` register their route, import, and nav link via the `PLOP_INJECT_IMPORT` / `PLOP_INJECT_ROUTE` / `PLOP_INJECT_LINK` comment markers — **don't remove those markers**.
+
+---
+
+## Authentication
+
+Not bundled by default. Run `npx plop Auth` to scaffold Amplify Gen 2 + Cognito. Once scaffolded:
+
+- `useAuthGuard(true)` — protected route, redirects to `/login` if unauthenticated
+- `useAuthGuard(false)` — public route, redirects to `/` if already signed in
+- Login page handles sign-in, sign-up, and email confirmation flows
+- `npm run sandbox` deploys the backend and keeps `.env.local` Cognito vars in sync
+
+```bash
+npx plop Auth
+npm install
+npm run sandbox      # wraps `ampx sandbox`; auto-syncs VITE_ Cognito vars to .env.local
+npm run dev          # http://localhost:5173/login
 ```
 
-The shared Wretch client reads this automatically. Falls back to JSONPlaceholder when unset so the demo runs without a backend.
+---
 
-## API Tester
+## API Client
 
-The dev app includes a built-in endpoint tester. Run `npm run dev`, click **API Tester**, and verify each CRUD endpoint against your Lambda before wiring up components.
+Wretch instance pre-configured with:
+- Base URL from `VITE_API_URL`
+- Query string addon
+- Auth middleware (Bearer token from `localStorage` by default; `Auth` generator swaps it to Amplify `fetchAuthSession`)
+- 401 logout handler
 
-## Backend
+```ts
+import api from '@/lib/api'
 
-This starter is built for **AWS Lambda + DynamoDB** backends (TypeScript or Python). The generated service expects:
+const data = await api.get('/products').json()
+```
 
-| Operation | Method | Path | Response |
-|---|---|---|---|
-| List | `GET` | `/resource` | `Item[]` |
-| Get one | `GET` | `/resource/:id` | `Item` |
-| Paginated | `GET` | `/resource?cursor=` | `{ items: Item[], nextCursor?: string }` |
-| Create | `POST` | `/resource` | `Item` |
-| Update | `PATCH` | `/resource/:id` | `Item` |
-| Delete | `DELETE` | `/resource/:id` | `204` |
+---
 
-See [INTEGRATION.md](INTEGRATION.md) for Lambda handler examples and DynamoDB pagination details.
+## Design System
 
-## Tech Stack
+Shared Tailwind class strings exported from `src/components/ui/index.ts`:
 
-| Layer | Library | Version |
-|---|---|---|
-| UI | React | 19 |
-| Build | Vite | 7 |
-| Language | TypeScript | 5.9 (strict) |
-| Styling | Tailwind CSS | 4 |
-| Data fetching | TanStack Query | 5 |
-| Tables | TanStack Table | 8 |
-| HTTP | Wretch | 3 |
-| Validation | Zod | 4 |
-| Forms | React Hook Form | 7 |
-| Code generation | Plop.js | 4 |
+```ts
+import { inputClass, labelClass, buttonClass } from '@/components/ui'
+```
+
+Tailwind v4 — declare custom tokens via `@theme` in `src/index.css` (no `tailwind.config.*`).
+
+---
 
 ## Scripts
 
 ```bash
-npm run dev      # Start development server
-npm run build    # Type-check + build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
-npm run plop     # Run code generator
+npm run dev        # Dev server with React Query DevTools (5173)
+npm run build      # Type-check + production build
+npm run preview    # Preview production build
+npm run plop       # Scaffold interactively (or: npx plop <Generator> "<Name>")
+npm run lint       # ESLint
+npm run sandbox    # ampx sandbox + auto-sync .env.local on deploy
+npm run sync-env   # Upsert Cognito vars from amplify_outputs.json into .env.local
 ```
+
+---
 
 ## Documentation
 
-- [QUICKSTART.md](QUICKSTART.md) — End-to-end guide: from `npm install` to a working CRUD app
-- [INTEGRATION.md](INTEGRATION.md) — API contract, DynamoDB patterns, auth, schema customization
-- [NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md) — Plop helper reference (pascalCase, pluralize, etc.)
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) — setup instructions
+- [NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md) — naming rules
+- [CLAUDE.md](CLAUDE.md) — scaffolding workflow & conventions for AI-assisted edits
 
 ## License
 

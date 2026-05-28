@@ -1,46 +1,82 @@
-import { api } from "@/services/api";
+/**
+ * @file {{camelCase name}}.service.ts
+ * @description HTTP service for the {{pascalCase name}} resource (wretch + Zod).
+ *
+ * [AI GUARDRAIL DIRECTIVE]
+ * 1. DO NOT change the names, signatures, or return types of the CRUD methods
+ *    below — the hooks in use{{pascalCase name}}.ts call them by exact name.
+ * 2. ALWAYS parse responses with the Zod schema (never return raw `data`).
+ * 3. Use the shared `api` client only. DO NOT import fetch/axios or global state.
+ * 4. WIRING (URLs, HTTP method, response envelope) IS meant to be edited — that
+ *    is the whole task. Change it ONLY inside the AI GENERATION ZONE (wiring).
+ * 5. Add NEW custom methods only inside the AI GENERATION ZONE (methods).
+ */
+import { api } from "@/lib/api";
 import { z } from "zod";
 import {
-    {{pascalCase name}}Schema,
-    type {{pascalCase name}},
-    type Create{{pascalCase name}}Input,
-    type Update{{pascalCase name}}Input,
+  {{pascalCase name}}Schema,
+  type {{pascalCase name}},
+  type Create{{pascalCase name}}Input,
+  type Update{{pascalCase name}}Input,
 } from "./{{camelCase name}}.schema";
 
-const PageResponseSchema = z.object({
-    items: z.array({{pascalCase name}}Schema),
-    nextCursor: z.string().optional(),
-});
+/* ==========================================================================
+ * AI GENERATION ZONE (wiring): match these to the REAL backend. Edit freely.
+ * @AI_TASK:
+ *   - Defaults follow the ECV backend convention (get/insert/update/delete,
+ *     `data`-wrapped responses). Adjust any path/method/key that differs.
+ *   - Set UPDATE_METHOD to "put" or "patch" to match the backend.
+ *   - unwrapItem reads `item` ({ message, item }); unwrapList reads `data`
+ *     ({ data: [...], nextToken, count }). Change the keys if they differ.
+ * ========================================================================== */
+const ROUTES = {
+  list: "/{{pluralize (kebabCase name)}}",
+  getById: (id: string) => `/{{pluralize (kebabCase name)}}/get/${id}`,
+  create: "/{{pluralize (kebabCase name)}}/insert",
+  update: (id: string) => `/{{pluralize (kebabCase name)}}/update/${id}`,
+  delete: (id: string) => `/{{pluralize (kebabCase name)}}/delete/${id}`,
+};
+
+const UPDATE_METHOD = "put" as "put" | "patch";
+
+// Single-item responses wrap in `item` ({ message, item: {...} });
+// list responses wrap in `data` ({ data: [...], nextToken, count }).
+const unwrapItem = (data: unknown): unknown =>
+  (data as { item?: unknown })?.item ?? data;
+const unwrapList = (data: unknown): unknown =>
+  (data as { data?: unknown })?.data ?? data;
+/* ===================== END AI GENERATION ZONE (wiring) =================== */
 
 export const {{camelCase name}}Service = {
-    getById: async (id: string): Promise<{{pascalCase name}}> => {
-        const data = await api.url(`/{{pluralize (kebabCase name)}}/${id}`).get().json();
-        return {{pascalCase name}}Schema.parse(data);
-    },
+  getById: async (id: string): Promise<{{pascalCase name}}> => {
+    const data = await api.url(ROUTES.getById(id)).get().json();
+    return {{pascalCase name}}Schema.parse(unwrapItem(data));
+  },
 
-    getAll: async (): Promise<{{pascalCase name}}[]> => {
-        const data = await api.url("/{{pluralize (kebabCase name)}}").get().json();
-        return z.array({{pascalCase name}}Schema).parse(data);
-    },
+  getAll: async (): Promise<{{pascalCase name}}[]> => {
+    const data = await api.url(ROUTES.list).get().json();
+    return z.array({{pascalCase name}}Schema).parse(unwrapList(data));
+  },
 
-    // DynamoDB cursor-based pagination — pass nextCursor from the previous page as the cursor arg
-    getPage: async (cursor?: string): Promise<{ items: {{pascalCase name}}[]; nextCursor?: string }> => {
-        const params = cursor ? { cursor } : {};
-        const data = await api.url("/{{pluralize (kebabCase name)}}").query(params).get().json();
-        return PageResponseSchema.parse(data);
-    },
+  create: async (payload: Create{{pascalCase name}}Input): Promise<{{pascalCase name}}> => {
+    const data = await api.url(ROUTES.create).post(payload).json();
+    return {{pascalCase name}}Schema.parse(unwrapItem(data));
+  },
 
-    create: async (payload: Create{{pascalCase name}}Input): Promise<{{pascalCase name}}> => {
-        const data = await api.url("/{{pluralize (kebabCase name)}}").post(payload).json();
-        return {{pascalCase name}}Schema.parse(data);
-    },
+  update: async (id: string, payload: Update{{pascalCase name}}Input): Promise<{{pascalCase name}}> => {
+    const req = api.url(ROUTES.update(id));
+    const data = await (UPDATE_METHOD === "put" ? req.put(payload) : req.patch(payload)).json();
+    return {{pascalCase name}}Schema.parse(unwrapItem(data));
+  },
 
-    update: async (id: string, payload: Update{{pascalCase name}}Input): Promise<{{pascalCase name}}> => {
-        const data = await api.url(`/{{pluralize (kebabCase name)}}/${id}`).patch(payload).json();
-        return {{pascalCase name}}Schema.parse(data);
-    },
+  delete: async (id: string): Promise<void> => {
+    await api.url(ROUTES.delete(id)).delete().res();
+  },
 
-    delete: async (id: string): Promise<void> => {
-        await api.url(`/{{pluralize (kebabCase name)}}/${id}`).delete().res();
-    },
+  /* ========================================================================
+   * AI GENERATION ZONE (methods): Add custom {{pascalCase name}} service methods below.
+   * @AI_TASK: Mirror the CRUD pattern — call via `api`, parse with a Zod schema,
+   *           return typed data. DO NOT edit the methods above.
+   * ======================================================================== */
+  /* ===================== END AI GENERATION ZONE (methods) ================= */
 };
