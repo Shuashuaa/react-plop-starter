@@ -176,7 +176,7 @@ ${
 
   // ─── Table ───────────────────────────────────────────────────────────────────
   plop.setGenerator("Table", {
-    description: "Plain HTML list table — simple display (TanStack Query fetch)",
+    description: "AntD Table — simple display (TanStack Query fetch)",
     prompts: [{ type: "input", name: "name", message: "Resource name (e.g. User)?" }],
     actions: [
       {
@@ -189,7 +189,7 @@ ${
 
   // ─── DataTable ─────────────────────────────────────────────────────────────
   plop.setGenerator("DataTable", {
-    description: "TanStack Table component with sort, filter & pagination",
+    description: "AntD Table component with sort, filter & pagination",
     prompts: [{ type: "input", name: "name", message: "Resource name (e.g. User)?" }],
     actions: [
       {
@@ -236,8 +236,8 @@ ${
         message: "Which table component?",
         default: "datatable",
         choices: [
-          { name: "DataTable — sort, filter & pagination (TanStack Table)", value: "datatable" },
-          { name: "Table — plain HTML, simple display", value: "table" },
+          { name: "DataTable — sort, filter & pagination (AntD Table)", value: "datatable" },
+          { name: "Table — AntD Table, simple display", value: "table" },
           { name: "None — no table component", value: "none" },
         ],
       },

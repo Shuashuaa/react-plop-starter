@@ -1,13 +1,16 @@
 /**
  * [AI GUARDRAIL DIRECTIVE]
- * 1. DO NOT change the loading/error branches or the use{{pluralize (pascalCase name)}}() data fetch.
- * 2. Columns live in two AI GENERATION ZONES: header <th>s and row <td>s — keep
- *    their count in sync and update colSpan to match.
- * 3. Render only fields that exist on the {{pascalCase name}} schema.
+ * 1. DO NOT change the use{{pluralize (pascalCase name)}}() data fetch or the error branch.
+ * 2. Columns are defined ONCE in the `columns` AI GENERATION ZONE as ColumnsType.
+ *    Add/edit column objects there only.
+ * 3. Use only `dataIndex`/`key`s that exist on the {{pascalCase name}} schema.
  * 4. onEdit/onDelete are optional row-action callbacks (wired by {{pascalCase name}}Manager).
- *    When passed, an Actions column renders. DO NOT mutate data here — call the props.
+ *    When passed, an Actions column is appended automatically — do not add it to
+ *    `columns` yourself, and do not mutate data here.
  */
 
+import { Table, Button, Space, Alert } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import { Pencil, Trash2 } from "lucide-react";
 import { use{{pluralize (pascalCase name)}}, type {{pascalCase name}} } from "@/features/{{camelCase name}}";
 
@@ -16,84 +19,75 @@ interface {{pascalCase name}}TableProps {
   onDelete?: (item: {{pascalCase name}}) => void;
 }
 
+/* ==========================================================================
+ * AI GENERATION ZONE (columns): one column per visible field.
+ * @AI_TASK: Replace/extend using {{pascalCase name}} schema keys.
+ *           - `dataIndex` must match a {{pascalCase name}} field exactly.
+ * ========================================================================== */
+const columns: ColumnsType<{{pascalCase name}}> = [
+  { title: "ID", dataIndex: "id", key: "id" },
+  { title: "Name", dataIndex: "name", key: "name" },
+];
+/* ===================== END AI GENERATION ZONE (columns) ================== */
+
 export const {{pascalCase name}}Table = ({ onEdit, onDelete }: {{pascalCase name}}TableProps = {}) => {
   const { data: {{camelCase (pluralize name)}}, error, isLoading } = use{{pluralize (pascalCase name)}}();
-  const showActions = Boolean(onEdit || onDelete);
 
-  if (isLoading) {
-    return <div className="text-sm text-slate-500 p-6">Loading {{lowerCase (pluralize name)}}...</div>;
-  }
+  // Row actions are appended as a trailing column when wired by the Manager.
+  const tableColumns: ColumnsType<{{pascalCase name}}> =
+    onEdit || onDelete
+      ? [
+          ...columns,
+          {
+            title: "Actions",
+            key: "actions",
+            align: "right",
+            render: (_, item) => (
+              <Space>
+                {{lb}}onEdit && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<Pencil className="w-4 h-4" />}
+                    onClick={() => onEdit(item)}
+                  >
+                    Edit
+                  </Button>
+                ){{rb}}
+                {{lb}}onDelete && (
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    icon={<Trash2 className="w-4 h-4" />}
+                    onClick={() => onDelete(item)}
+                  >
+                    Delete
+                  </Button>
+                ){{rb}}
+              </Space>
+            ),
+          },
+        ]
+      : columns;
 
   if (error) {
     return (
-      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 m-6">
-        Error: {error instanceof Error ? error.message : "Failed to load"}
-      </div>
+      <Alert
+        type="error"
+        showIcon
+        message={error instanceof Error ? error.message : "Failed to load"}
+      />
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-      <table className="w-full">
-        <thead>
-          <tr className="bg-slate-50">
-            {/* AI GENERATION ZONE (headers): @AI_TASK one <th> per column. */}
-            <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-left">
-              ID
-            </th>
-            <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-left">
-              Name
-            </th>
-            {/* END AI GENERATION ZONE (headers) */}
-            {{lb}}showActions && (
-              <th className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-3 text-right">
-                Actions
-              </th>
-            ){{rb}}
-          </tr>
-        </thead>
-        <tbody>
-          {{lb}}{{camelCase (pluralize name)}}?.length === 0 && (
-            <tr>
-              <td colSpan={{lb}}2 + (showActions ? 1 : 0){{rb}} className="text-center py-10">
-                <p className="text-sm text-slate-500">No {{lowerCase (pluralize name)}} found</p>
-              </td>
-            </tr>
-          ){{rb}}
-          {{lb}}{{camelCase (pluralize name)}}?.map((item) => (
-            <tr key={{lb}}item.id{{rb}} className="hover:bg-slate-50 border-t border-slate-200">
-              {/* AI GENERATION ZONE (cells): @AI_TASK one <td> per header column. */}
-              <td className="text-sm text-slate-700 px-4 py-3">{{lb}}item.id{{rb}}</td>
-              <td className="text-sm text-slate-700 px-4 py-3">{{lb}}item.name{{rb}}</td>
-              {/* END AI GENERATION ZONE (cells) */}
-              {{lb}}showActions && (
-                <td className="px-4 py-3 text-right whitespace-nowrap">
-                  {{lb}}onEdit && (
-                    <button
-                      type="button"
-                      onClick={{lb}}() => onEdit(item){{rb}}
-                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 mr-3"
-                    >
-                      <Pencil className="w-4 h-4" />
-                      Edit
-                    </button>
-                  ){{rb}}
-                  {{lb}}onDelete && (
-                    <button
-                      type="button"
-                      onClick={{lb}}() => onDelete(item){{rb}}
-                      className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  ){{rb}}
-                </td>
-              ){{rb}}
-            </tr>
-          )){{rb}}
-        </tbody>
-      </table>
-    </div>
+    <Table<{{pascalCase name}}>
+      rowKey="id"
+      columns={tableColumns}
+      dataSource={{lb}}{{camelCase (pluralize name)}} ?? []{{rb}}
+      loading={isLoading}
+      pagination={false}
+    />
   );
 };

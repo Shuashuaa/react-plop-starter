@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
+import { Card, Segmented, Form, Input, Button, Alert, Typography } from 'antd';
 import { useAuthGuard } from '@/hooks/useAuth';
+
+const { Title, Text } = Typography;
 
 type View = 'login' | 'signup' | 'confirm';
 type FormValues = { name: string; email: string; password: string; confirmPassword: string; code: string };
 type Status = { type: 'error' | 'success'; message: string } | null;
-
-const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 transition';
-const btnClass = 'w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [view, setView] = useState<View>('login');
   const [status, setStatus] = useState<Status>(null);
 
-  const { register, handleSubmit, getValues, watch, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
+  const { handleSubmit, getValues, watch, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
     defaultValues: { name: '', email: '', password: '', confirmPassword: '', code: '' },
   });
 
@@ -58,110 +58,162 @@ export default function LoginPage() {
 
   if (loading) return null;
 
+  // RHF's watch() is stable; React Compiler can't verify it, so opt out here.
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const pw = watch('password') ?? '';
+  const pwRules = [
+    { label: 'Min 8 chars', met: pw.length >= 8 },
+    { label: 'Uppercase', met: /[A-Z]/.test(pw) },
+    { label: 'Lowercase', met: /[a-z]/.test(pw) },
+    { label: 'Number', met: /[0-9]/.test(pw) },
+    { label: 'Symbol', met: /[^A-Za-z0-9]/.test(pw) },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Sign in</h1>
-          <p className="mt-1 text-sm text-slate-400">Cognito Authentication</p>
+          <Title level={2} style={{lb}}{ marginBottom: 4 }{{rb}}>Sign in</Title>
+          <Text type="secondary">Cognito Authentication</Text>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl">
+
+        <Card>
           {view !== 'confirm' && (
-            <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
-              {(['login', 'signup'] as const).map((v) => (
-                <button key={v} type="button" onClick={() => switchView(v)}
-                  className={`flex-1 rounded-md py-1.5 text-sm font-medium transition ${
-                    view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}>
-                  {v === 'login' ? 'Sign In' : 'Sign Up'}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              block
+              className="mb-6"
+              value={view}
+              onChange={(v) => switchView(v as View)}
+              options={[{ label: 'Sign In', value: 'login' }, { label: 'Sign Up', value: 'signup' }]}
+            />
           )}
+
           {view === 'confirm' && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900">Check your email</h2>
-              <p className="mt-1 text-sm text-slate-500">We sent a 6-digit code to <span className="font-medium text-slate-700">{watch('email')}</span></p>
+              <Title level={4} style={{lb}}{ marginBottom: 4 }{{rb}}>Check your email</Title>
+              {/* eslint-disable-next-line react-hooks/incompatible-library */}
+              <Text type="secondary">We sent a 6-digit code to <Text strong>{watch('email')}</Text></Text>
             </div>
           )}
+
           {status && (
-            <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
-              status.type === 'error' ? 'border-red-200 bg-red-50 text-red-600' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            }`}>{status.message}</div>
+            <Alert
+              className="mb-4"
+              showIcon
+              type={status.type === 'error' ? 'error' : 'success'}
+              message={status.message}
+            />
           )}
+
           {view === 'login' && (
-            <form onSubmit={handleSubmit(onLogin)} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
-                <input {...register('email', { required: true })} type="email" autoComplete="email" placeholder="you@example.com" className={inputClass} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                <input {...register('password', { required: true })} type="password" autoComplete="current-password" placeholder="••••••••" className={inputClass} />
-              </div>
-              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Signing in…' : 'Sign In'}</button>
-            </form>
-          )}
-          {view === 'signup' && (
-            <form onSubmit={handleSubmit(onSignup)} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Name</label>
-                <input {...register('name', { required: true })} type="text" autoComplete="name" placeholder="Jane Doe" className={inputClass} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
-                <input {...register('email', { required: true })} type="email" autoComplete="email" placeholder="you@example.com" className={inputClass} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                <input {...register('password', { required: true, minLength: 8 })} type="password" autoComplete="new-password" placeholder="••••••••" className={inputClass} />
-                {(() => {
-                  // RHF's watch() is stable; React Compiler can't verify it, so opt out here.
-                  // eslint-disable-next-line react-hooks/incompatible-library
-                  const pw = watch('password') ?? '';
-                  const rules = [
-                    { label: 'Min 8 chars', met: pw.length >= 8 },
-                    { label: 'Uppercase', met: /[A-Z]/.test(pw) },
-                    { label: 'Lowercase', met: /[a-z]/.test(pw) },
-                    { label: 'Number', met: /[0-9]/.test(pw) },
-                    { label: 'Symbol', met: /[^A-Za-z0-9]/.test(pw) },
-                  ];
-                  return (
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                      {rules.map(({ label, met }) => (
-                        <span key={label} className={`text-xs transition-colors ${met ? 'text-emerald-600' : 'text-slate-400'}`}>
-                          {met ? '✓' : '·'} {label}
-                        </span>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Confirm Password</label>
-                <input {...register('confirmPassword', { required: true, validate: (val) => val === getValues('password') || 'Passwords do not match.' })} type="password" autoComplete="new-password" placeholder="••••••••" className={inputClass} />
-                {errors.confirmPassword && <p className="mt-1.5 text-xs text-red-500">{errors.confirmPassword.message}</p>}
-              </div>
-              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Creating account…' : 'Create Account'}</button>
-            </form>
-          )}
-          {view === 'confirm' && (
-            <form onSubmit={handleSubmit(onConfirm)} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Verification Code</label>
-                <Controller name="code" control={control} rules=\{{ required: true, minLength: { value: 6, message: 'Must be 6 digits.' } }}
+            <form onSubmit={handleSubmit(onLogin)}>
+              <Form component={false} layout="vertical">
+                <Controller
+                  name="email"
+                  control={control}
+                  rules={{lb}}{ required: 'Email is required.' }{{rb}}
                   render={({ field }) => (
-                    <input {...field} type="text" inputMode="numeric" maxLength={6} placeholder="123456"
-                      onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
-                      className={`${inputClass} text-center font-mono text-lg tracking-widest`} />
-                  )} />
-                {errors.code && <p className="mt-1.5 text-xs text-red-500">{errors.code.message}</p>}
-              </div>
-              <button type="submit" disabled={isSubmitting} className={btnClass}>{isSubmitting ? 'Verifying…' : 'Confirm Account'}</button>
-              <button type="button" onClick={() => switchView('signup')} className="w-full text-sm text-slate-500 transition hover:text-slate-700">Back to sign up</button>
+                    <Form.Item label="Email" required validateStatus={errors.email ? 'error' : undefined} help={errors.email?.message}>
+                      <Input {...field} type="email" autoComplete="email" placeholder="you@example.com" />
+                    </Form.Item>
+                  )}
+                />
+                <Controller
+                  name="password"
+                  control={control}
+                  rules={{lb}}{ required: 'Password is required.' }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Password" required validateStatus={errors.password ? 'error' : undefined} help={errors.password?.message}>
+                      <Input.Password {...field} autoComplete="current-password" placeholder="••••••••" />
+                    </Form.Item>
+                  )}
+                />
+                <Button type="primary" htmlType="submit" loading={isSubmitting} block>Sign In</Button>
+              </Form>
             </form>
           )}
-        </div>
+
+          {view === 'signup' && (
+            <form onSubmit={handleSubmit(onSignup)}>
+              <Form component={false} layout="vertical">
+                <Controller
+                  name="name"
+                  control={control}
+                  rules={{lb}}{ required: 'Name is required.' }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Name" required validateStatus={errors.name ? 'error' : undefined} help={errors.name?.message}>
+                      <Input {...field} autoComplete="name" placeholder="Jane Doe" />
+                    </Form.Item>
+                  )}
+                />
+                <Controller
+                  name="email"
+                  control={control}
+                  rules={{lb}}{ required: 'Email is required.' }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Email" required validateStatus={errors.email ? 'error' : undefined} help={errors.email?.message}>
+                      <Input {...field} type="email" autoComplete="email" placeholder="you@example.com" />
+                    </Form.Item>
+                  )}
+                />
+                <Controller
+                  name="password"
+                  control={control}
+                  rules={{lb}}{ required: 'Password is required.', minLength: { value: 8, message: 'Min 8 characters.' } }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Password" required validateStatus={errors.password ? 'error' : undefined} help={errors.password?.message}>
+                      <Input.Password {...field} autoComplete="new-password" placeholder="••••••••" />
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                        {pwRules.map(({ label, met }) => (
+                          <span key={label} className={`text-xs transition-colors ${met ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            {met ? '✓' : '·'} {label}
+                          </span>
+                        ))}
+                      </div>
+                    </Form.Item>
+                  )}
+                />
+                <Controller
+                  name="confirmPassword"
+                  control={control}
+                  rules={{lb}}{ required: 'Please confirm your password.', validate: (val) => val === getValues('password') || 'Passwords do not match.' }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Confirm Password" required validateStatus={errors.confirmPassword ? 'error' : undefined} help={errors.confirmPassword?.message}>
+                      <Input.Password {...field} autoComplete="new-password" placeholder="••••••••" />
+                    </Form.Item>
+                  )}
+                />
+                <Button type="primary" htmlType="submit" loading={isSubmitting} block>Create Account</Button>
+              </Form>
+            </form>
+          )}
+
+          {view === 'confirm' && (
+            <form onSubmit={handleSubmit(onConfirm)}>
+              <Form component={false} layout="vertical">
+                <Controller
+                  name="code"
+                  control={control}
+                  rules={{lb}}{ required: 'Code is required.', minLength: { value: 6, message: 'Must be 6 digits.' } }{{rb}}
+                  render={({ field }) => (
+                    <Form.Item label="Verification Code" required validateStatus={errors.code ? 'error' : undefined} help={errors.code?.message}>
+                      <Input
+                        {...field}
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="123456"
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                        className="text-center font-mono text-lg tracking-widest"
+                      />
+                    </Form.Item>
+                  )}
+                />
+                <Button type="primary" htmlType="submit" loading={isSubmitting} block>Confirm Account</Button>
+                <Button type="link" block className="mt-2" onClick={() => switchView('signup')}>Back to sign up</Button>
+              </Form>
+            </form>
+          )}
+        </Card>
       </div>
     </div>
   );

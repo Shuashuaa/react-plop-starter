@@ -1,27 +1,20 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { Form, Input, Button, Alert } from "antd";
 import { Create{{pascalCase name}}Schema, type Create{{pascalCase name}}Input } from "@/features/{{camelCase name}}";
-import {
-  inputClass,
-  labelClass,
-  fieldErrorClass,
-  serverErrorClass,
-  buttonClass,
-} from "@/components/ui";
 
 /**
  * [AI GUARDRAIL DIRECTIVE]
  * 1. DO NOT change the component signature, RHF setup, or handleFormSubmit logic.
  * 2. Validation comes from Create{{pascalCase name}}Schema via zodResolver — edit the
- *    schema first, then add matching inputs inside the AI GENERATION ZONE.
- * 3. Register every input with {...register("fieldName")} using exact schema keys.
- * 4. Reuse inputClass/labelClass/fieldErrorClass — DO NOT inline new styles.
+ *    schema first, then add matching fields inside the AI GENERATION ZONE.
+ * 3. RHF + zod is the source of truth. DO NOT switch to AntD's own <Form> data
+ *    collection: the <Form> here is layout-only (component={false}, no `name` on
+ *    Form.Item). Wire every input through <Controller name="fieldName"> with exact
+ *    schema keys, and surface errors via Form.Item validateStatus/help.
+ * 4. Use AntD inputs (Input, InputNumber, Select, DatePicker, etc.) — no inline styles.
  */
-
-// Next steps:
-// 1. Run "Resource" generator for "{{name}}" if you haven't already.
-// 2. Update {{camelCase name}}.schema.ts to match the fields below.
 
 interface {{pascalCase name}}FormProps {
   onSubmit: (data: Create{{pascalCase name}}Input) => Promise<void>;
@@ -32,7 +25,7 @@ export const {{pascalCase name}}Form = ({ onSubmit, defaultValues }: {{pascalCas
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Create{{pascalCase name}}Input>({
@@ -50,29 +43,38 @@ export const {{pascalCase name}}Form = ({ onSubmit, defaultValues }: {{pascalCas
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      {serverError && <p className={serverErrorClass}>{serverError}</p>}
+    <form onSubmit={handleSubmit(handleFormSubmit)}>
+      {/* component={false} => no nested <form>; Form is layout/context only. */}
+      <Form component={false} layout="vertical">
+        {serverError && (
+          <Alert type="error" showIcon message={serverError} className="mb-4" />
+        )}
 
-      {/* ====================================================================
-        * AI GENERATION ZONE: One <div> block per schema field below.
-        * @AI_TASK: Mirror this block for each Create{{pascalCase name}}Schema field.
-        *           Keep register() keys identical to schema keys.
-        * ==================================================================== */}
-      <div>
-        <label className={labelClass}>Name *</label>
-        <input
-          type="text"
-          aria-required
-          className={inputClass}
-          {...register("name")}
+        {/* ==================================================================
+          * AI GENERATION ZONE: one <Controller> + <Form.Item> block per field.
+          * @AI_TASK: Mirror this block for each Create{{pascalCase name}}Schema field.
+          *           Keep Controller `name` identical to the schema key.
+          * ================================================================== */}
+        <Controller
+          name="name"
+          control={control}
+          render={({ field }) => (
+            <Form.Item
+              label="Name"
+              required
+              validateStatus={errors.name ? "error" : undefined}
+              help={errors.name?.message}
+            >
+              <Input {...field} />
+            </Form.Item>
+          )}
         />
-        {errors.name && <p className={fieldErrorClass}>{errors.name.message}</p>}
-      </div>
-      {/* ===================== END AI GENERATION ZONE ===================== */}
+        {/* ===================== END AI GENERATION ZONE ===================== */}
 
-      <button type="submit" disabled={isSubmitting} className={buttonClass}>
-        {isSubmitting ? "Saving..." : "Save"}
-      </button>
+        <Button type="primary" htmlType="submit" loading={isSubmitting} block>
+          Save
+        </Button>
+      </Form>
     </form>
   );
 };

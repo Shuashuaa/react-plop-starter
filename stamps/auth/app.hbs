@@ -1,8 +1,11 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import { signOut } from "aws-amplify/auth";
+import { Button, Card, Space, Typography } from "antd";
 import LoginPage from "@/pages/LoginPage";
 import { useAuthGuard } from "@/hooks/useAuth";
 /* PLOP_INJECT_IMPORT */
+
+const { Title, Text } = Typography;
 
 /**
  * Protected landing. useAuthGuard(true) redirects to /login when signed out.
@@ -25,27 +28,22 @@ function Dashboard() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-sm text-slate-500">Welcome to your app.</p>
+            <Title level={3} style={{lb}}{ margin: 0 }{{rb}}>Dashboard</Title>
+            <Text type="secondary">Welcome to your app.</Text>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600">
-              Hello, <span className="font-bold">{user?.name}!</span>
-            </span>
-            <button
-              onClick={handleSignOut}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-            >
-              Sign out
-            </button>
-          </div>
+          <Space>
+            <Text>Hello, <Text strong>{user?.name}!</Text></Text>
+            <Button onClick={handleSignOut}>Sign out</Button>
+          </Space>
         </div>
 
-        <nav className="flex flex-col gap-2 bg-white rounded-2xl border border-slate-200 p-6">
-          <p className="text-sm text-slate-500 mb-1">Pages</p>
-          <Link to="/" className="text-sm text-blue-600 hover:text-blue-700">Dashboard</Link>
-          {/* PLOP_INJECT_LINK */}
-        </nav>
+        <Card>
+          <nav className="flex flex-col gap-2">
+            <Text type="secondary">Pages</Text>
+            <Link to="/" className="text-sm text-blue-600 hover:text-blue-700">Dashboard</Link>
+            {/* PLOP_INJECT_LINK */}
+          </nav>
+        </Card>
       </div>
     </main>
   );
