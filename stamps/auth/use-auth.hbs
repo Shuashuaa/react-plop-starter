@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import { useNavigate } from 'react-router-dom';
 
-type AuthUser = { username: string; userId: string; name: string };
+export type AuthUser = { username: string; userId: string; name: string };
 
 /**
  * Mount-once auth bootstrap. `required: true` guards a protected route

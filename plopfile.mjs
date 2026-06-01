@@ -20,6 +20,7 @@ export default function (plop) {
       "src/components/AmplifySetup.tsx",
       "src/hooks/useAuth.ts",
       "src/pages/LoginPage.tsx",
+      "src/pages/NotFoundPage.tsx",
     ];
     const cwd = process.cwd();
     const existing = targets.filter((f) => fs.existsSync(path.join(cwd, f)));
@@ -397,6 +398,20 @@ ${
         type: "add",
         path: "src/pages/LoginPage.tsx",
         templateFile: "stamps/auth/login-page.hbs",
+      },
+      // 404 fallback rendered by the catch-all route in the auth-aware App shell.
+      {
+        type: "add",
+        path: "src/pages/NotFoundPage.tsx",
+        templateFile: "stamps/auth/not-found-page.hbs",
+      },
+      // Plop generator palette rendered on the Dashboard. skipIfExists keeps
+      // local edits intact when re-running Auth on an existing checkout.
+      {
+        type: "add",
+        path: "src/components/PlopCommands.tsx",
+        templateFile: "stamps/auth/plop-commands.hbs",
+        skipIfExists: true,
       },
       // Auth-aware router shell — protected landing + /login (keeps PLOP_INJECT markers)
       {

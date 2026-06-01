@@ -1,27 +1,62 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  Outlet,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
 import { signOut } from "aws-amplify/auth";
-import { Button, Card, Space, Typography } from "antd";
+import { Button, Card, Space, Spin, Typography } from "antd";
 import LoginPage from "@/pages/LoginPage";
-import { useAuthGuard } from "@/hooks/useAuth";
+import NotFoundPage from "@/pages/NotFoundPage";
+import PlopCommands from "@/components/PlopCommands";
+import { useAuthGuard, type AuthUser } from "@/hooks/useAuth";
 /* PLOP_INJECT_IMPORT */
 
 const { Title, Text } = Typography;
 
+type AuthOutletContext = { user: AuthUser };
+
+export function useAuthUser() {
+  return useOutletContext<AuthOutletContext>().user;
+}
+
+function FullScreenSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <Spin size="large" />
+    </div>
+  );
+}
+
 /**
- * Protected landing. useAuthGuard(true) redirects to /login when signed out.
- * Generated pages register their route + nav link here via the Page / Feature
- * generators (PLOP_INJECT_* markers). DO NOT remove the markers — plop needs them.
+ * Global auth gate. Every protected route is nested under this element, so
+ * generated pages inherit the guard automatically. useAuthGuard(true) redirects
+ * to /login when signed out; while bootstrapping, a spinner replaces the white
+ * page flash. Children read the resolved user via useOutletContext / useAuthUser.
+ */
+function RequireAuth() {
+  const { user, loading } = useAuthGuard(true);
+  if (loading || !user) return <FullScreenSpinner />;
+  const ctx: AuthOutletContext = { user };
+  return <Outlet context={ctx} />;
+}
+
+/**
+ * Protected landing. Generated pages register their route + nav link here via
+ * the Page / Feature generators (PLOP_INJECT_* markers). DO NOT remove the
+ * markers — plop needs them.
  */
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, loading } = useAuthGuard(true);
+  const user = useAuthUser();
 
   async function handleSignOut() {
     await signOut();
     navigate("/login");
   }
-
-  if (loading) return null;
 
   return (
     <main className="bg-slate-50 p-6 min-h-screen">
@@ -32,17 +67,20 @@ function Dashboard() {
             <Text type="secondary">Welcome to your app.</Text>
           </div>
           <Space>
-            <Text>Hello, <Text strong>{user?.name}!</Text></Text>
+            <Text>Hello, <Text strong>{user.name}!</Text></Text>
             <Button onClick={handleSignOut}>Sign out</Button>
           </Space>
         </div>
 
-        <Card>
+        <Card className="mb-6">
           <nav className="flex flex-col gap-2">
             <Text type="secondary">Pages</Text>
-            <Link to="/" className="text-sm text-blue-600 hover:text-blue-700">Dashboard</Link>
             {/* PLOP_INJECT_LINK */}
           </nav>
+        </Card>
+
+        <Card title="Plop generators">
+          <PlopCommands />
         </Card>
       </div>
     </main>
@@ -54,8 +92,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Dashboard />} />
-        {/* PLOP_INJECT_ROUTE */}
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<Dashboard />} />
+          {/* PLOP_INJECT_ROUTE */}
+        </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
