@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Card } from "antd";
 import PlopCommands from "@/components/PlopCommands";
 import { HelpTooltip } from "@/components/HelpTooltip";
@@ -33,6 +33,14 @@ function Home() {
             }
           />
         </div>
+
+        <Card className="mb-6">
+          <h2 className="text-base font-semibold text-slate-900 mb-1">Pages</h2>
+          <p className="text-sm text-slate-500 mb-4">Scaffolded pages register their link here.</p>
+          <nav className="flex flex-wrap items-center gap-4">
+            {/* PLOP_INJECT_LINK */}
+          </nav>
+        </Card>
 
         <Card>
           <h2 className="text-base font-semibold text-slate-900 mb-1">Get started</h2>

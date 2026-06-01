@@ -207,15 +207,14 @@ ${
   plop.setGenerator("Page", {
     description: "Thin react-router page (registers route in src/App.tsx)",
     prompts: [{ type: "input", name: "name", message: "Page / route name (e.g. Dashboard)?" }],
-    actions: (answers) => [
+    actions: () => [
       {
         type: "add",
         path: "src/pages/{{pascalCase name}}Page.tsx",
         templateFile: "stamps/pages/page.hbs",
-        // Standalone page keeps prior behaviour: render the simple <Name>Table.
-        data: {
-          tableComponent: `${plop.getHelper("pascalCase")(answers.name)}Table`,
-        },
+        // Standalone page is a thin placeholder route — it does NOT reference a
+        // table/manager (those come from the Feature generator). Renders the
+        // AI GENERATION ZONE placeholder so there is no dangling import.
       },
       ...routerInjectActions(),
     ],
