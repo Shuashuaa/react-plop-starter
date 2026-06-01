@@ -85,7 +85,7 @@ npm install
 
 # 2. Set environment variables
 cp .env.example .env.local
-# Edit .env.local → VITE_API_URL=https://your-backend.com
+# Edit .env.local → VITE_API_BASE_URL=https://your-backend.com
 # (Cognito vars are auto-filled by the Auth generator — leave them for now)
 
 # 3. Start dev server
@@ -253,7 +253,7 @@ npm run dev          # http://localhost:5173/login
 ## API Client
 
 Wretch instance pre-configured with:
-- Base URL from `VITE_API_URL`
+- Base URL from `VITE_API_BASE_URL`
 - Query string addon
 - Auth middleware (Bearer token from `localStorage` by default; `Auth` generator swaps it to Amplify `fetchAuthSession`)
 - 401 logout handler

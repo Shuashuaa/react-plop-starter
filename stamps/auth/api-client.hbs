@@ -1,7 +1,7 @@
 import wretch from "wretch";
 import QueryStringAddon from "wretch/addons/queryString";
 
-export const api = wretch(import.meta.env.VITE_API_URL ?? "")
+export const api = wretch(import.meta.env.VITE_API_BASE_URL ?? "")
   .addon(QueryStringAddon)
   .middlewares([
     // Auth: attach Amplify Cognito idToken to every request.

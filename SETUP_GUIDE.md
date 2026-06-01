@@ -25,10 +25,10 @@ Make sure you have these key dependencies:
 ## Step 2: Point the API client at JSONPlaceholder
 
 The shared client already lives at `src/lib/api/index.ts` (wretch + config guard + auth +
-401 logout). It reads its base URL from `VITE_API_URL`. Set it in `.env.local`:
+401 logout). It reads its base URL from `VITE_API_BASE_URL`. Set it in `.env.local`:
 
 ```
-VITE_API_URL=https://jsonplaceholder.typicode.com
+VITE_API_BASE_URL=https://jsonplaceholder.typicode.com
 ```
 
 Restart `npm run dev` after editing `.env.local`. The `TanstackQueryProvider` is already
@@ -269,7 +269,7 @@ export const UserDetail = ({ userId }: { userId: string }) => {
 ## Summary
 
 1. Install dependencies
-2. Set `VITE_API_URL` in `.env.local`
+2. Set `VITE_API_BASE_URL` in `.env.local`
 3. Run `npm run plop` and enter "User" (or use `Feature` for the whole stack)
 4. Customize the schema and the service wiring zone to match the API
 5. Generate a page (`npx plop Page "User"`) — it registers its own route

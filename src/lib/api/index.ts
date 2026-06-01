@@ -1,7 +1,7 @@
 import wretch from "wretch";
 import QueryStringAddon from "wretch/addons/queryString";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export const api = wretch(API_URL)
   .addon(QueryStringAddon)
@@ -13,9 +13,9 @@ export const api = wretch(API_URL)
     (next) => async (url, opts) => {
       if (!/^https?:\/\//.test(API_URL)) {
         throw new Error(
-          `VITE_API_URL is not a valid base URL (got "${API_URL}"). ` +
+          `VITE_API_BASE_URL is not a valid base URL (got "${API_URL}"). ` +
             "Set it in .env.local to an absolute http(s) URL " +
-            "(e.g. VITE_API_URL=https://your-backend.com) and restart the dev server.",
+            "(e.g. VITE_API_BASE_URL=https://your-backend.com) and restart the dev server.",
         );
       }
       const res = await next(url, opts);
@@ -24,7 +24,7 @@ export const api = wretch(API_URL)
       if (!res.ok && res.headers.get("content-type")?.includes("text/html")) {
         throw new Error(
           `API returned an HTML page (status ${res.status}) from "${url}". ` +
-            "Check VITE_API_URL points to a JSON API, not a web page.",
+            "Check VITE_API_BASE_URL points to a JSON API, not a web page.",
         );
       }
       return res;

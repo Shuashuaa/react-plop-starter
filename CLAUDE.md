@@ -68,4 +68,4 @@ No `tailwind.config.*`. Declare custom tokens via `@theme` in `src/index.css` wh
 ## Env (Vite)
 
 Client env vars must be prefixed `VITE_` and read via `import.meta.env.VITE_*`
-(never `process.env.*`). `VITE_API_URL` is the JSON API base URL.
+(never `process.env.*`). `VITE_API_BASE_URL` is the JSON API base URL.

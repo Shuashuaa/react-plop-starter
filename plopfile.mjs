@@ -113,7 +113,7 @@ ${
     : ""
 }
   3. Env — set the API base URL (local offline → dev resources only):
-       .env.local → VITE_API_URL=https://<your-api>
+       .env.local → VITE_API_BASE_URL=https://<your-api>
 
   4. Verify:
        npm run dev    # route /${kebab} is registered in src/App.tsx
