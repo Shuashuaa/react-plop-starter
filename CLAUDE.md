@@ -18,8 +18,8 @@ Generators (`plopfile.mjs`, templates in `stamps/`):
 |---|---|
 | `npx plop Resource "<Name>"` | `src/features/<name>/` — Zod schema + wretch service + TanStack Query hooks + index |
 | `npx plop Form "<Name>"` | `src/components/<Name>Form.tsx` |
-| `npx plop Table "<Name>"` | `src/components/<Name>Table.tsx` — plain HTML table, simple display |
-| `npx plop DataTable "<Name>"` | `src/components/<Name>DataTable.tsx` — TanStack Table, sort/filter/paginate |
+| `npx plop Table "<Name>"` | `src/components/<Name>Table.tsx` — AntD Table, simple display |
+| `npx plop DataTable "<Name>"` | `src/components/<Name>DataTable.tsx` — AntD Table, sort/filter/paginate |
 | `npx plop Page "<Name>"` | `src/pages/<Name>Page.tsx` + registers route + nav link in `src/App.tsx` |
 | `npx plop Feature "<Name>"` | Resource + Form + Page + a table — prompts for table kind: DataTable (default), Table, or None. When a table is chosen it also generates a `<Name>Manager` wiring full CRUD (New/Edit via the shared form in a modal, inline Delete with a confirm modal); the page renders the Manager. With None, the page renders a placeholder. |
 | `npx plop Auth` | Amplify Gen 2 Cognito auth scaffold |
@@ -51,11 +51,19 @@ comment markers — **never remove the markers**.
 `src/main.tsx`, and `src/lib/api/index.ts` — run it **before** adding feature pages.
 Cognito env vars are `VITE_*` (synced into `.env.local` by `npm run sync-env`).
 
-## Tailwind
+## UI: Ant Design + Tailwind
 
-**Tailwind v4** (`@tailwindcss/postcss`, `@import "tailwindcss"` in `src/index.css`).
-No `tailwind.config.*`. Follow the ECV design language: slate neutrals + blue accent;
-reuse the class constants in `src/components/ui/index.ts` — never inline new field styles.
+**Ant Design v6 is the primary UI framework; Tailwind v4 handles layout.**
+
+- **Components** (buttons, inputs, tables, modals, typography, alerts) come from `antd`. Don't hand-roll what AntD provides.
+- **Tailwind** is for layout/spacing only (`flex`, `gap`, `grid`, margins, `max-w-*`). Use it as the escape hatch, not for component styling.
+- **Theme** lives in `src/lib/antd/theme.ts` (brand `colorPrimary` + radius), applied via `<ConfigProvider>` in `src/main.tsx`. Retheme there, not with inline styles.
+- **Forms** keep the React Hook Form + Zod contract. AntD inputs are wired through RHF `<Controller>`; `<Form>` is layout-only (`component={false}`, no `name` on `Form.Item`). Do **not** switch to AntD's own form data collection.
+- **`<App className="contents">`** wraps the tree so `App.useApp()` (message / modal / notification static APIs) works while staying layout-transparent.
+
+### Tailwind v4
+
+No `tailwind.config.*`. Declare custom tokens via `@theme` in `src/index.css` when needed.
 
 ## Env (Vite)
 

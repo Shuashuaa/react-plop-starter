@@ -65,9 +65,9 @@ Run `npm run plop` (pick interactively) or `npx plop <Generator> "<Name>"`. Exam
 | Framework | Vite + React 19 + TypeScript |
 | Routing | react-router-dom (generated pages self-register) |
 | Data fetching | TanStack Query v5 + Wretch |
-| Tables | TanStack Table v8 |
-| Forms | React Hook Form + Zod |
-| Styling | Tailwind CSS v4 (`@tailwindcss/postcss`, no config file) |
+| UI components | Ant Design v6 (`antd`) |
+| Forms | React Hook Form + Zod (AntD inputs via `Controller`) |
+| Styling | Tailwind CSS v4 for layout (`@tailwindcss/postcss`, no config file) |
 | Codegen | Plop + Handlebars |
 | Auth | AWS Amplify Gen 2 + Cognito (opt-in via `Auth` generator) |
 
@@ -114,8 +114,8 @@ Or run `npm run plop` with no args to pick interactively.
 |---|---|
 | `Resource` | `src/features/<name>/` — schema + service + hooks + barrel index |
 | `Form` | `src/components/<Name>Form.tsx` |
-| `Table` | `src/components/<Name>Table.tsx` — plain HTML table |
-| `DataTable` | `src/components/<Name>DataTable.tsx` — TanStack Table, sort/filter/paginate |
+| `Table` | `src/components/<Name>Table.tsx` — AntD Table, simple display |
+| `DataTable` | `src/components/<Name>DataTable.tsx` — AntD Table, sort/filter/paginate |
 | `Page` | `src/pages/<Name>Page.tsx` + route + nav link in `src/App.tsx` |
 | `Feature` | All of the Above |
 | `Auth` | Amplify Gen 2 backend + Cognito frontend scaffold |
@@ -207,9 +207,11 @@ root/
 ├── src/
 │   ├── features/            # generated feature modules
 │   ├── components/
-│   │   ├── ui/index.ts      # Shared Tailwind class constants
+│   │   ├── PlopCommands.tsx # Dashboard command list
+│   │   ├── HelpTooltip.tsx  # AntD Tooltip wrapper
 │   │   └── *Form / *Table / *Manager   (generated)
 │   ├── lib/
+│   │   ├── antd/theme.ts    # AntD brand theme tokens
 │   │   ├── api/             # Wretch HTTP client
 │   │   ├── tanstack-query/  # QueryClient provider
 │   │   └── utils/cn.ts      # clsx + tailwind-merge
@@ -266,13 +268,12 @@ const data = await api.get('/products').json()
 
 ## Design System
 
-Shared Tailwind class strings exported from `src/components/ui/index.ts`:
+**Ant Design v6** is the primary UI framework; **Tailwind v4** handles layout/spacing only.
 
-```ts
-import { inputClass, labelClass, buttonClass } from '@/components/ui'
-```
-
-Tailwind v4 — declare custom tokens via `@theme` in `src/index.css` (no `tailwind.config.*`).
+- Brand theme tokens live in `src/lib/antd/theme.ts` (`colorPrimary`, `borderRadius`), applied via `<ConfigProvider>` in `src/main.tsx`.
+- The `<App className="contents">` wrapper enables `App.useApp()` (`message` / `modal` / `notification`) without breaking layout.
+- Forms keep React Hook Form + Zod — AntD inputs are wired through `<Controller>`; `<Form>` is layout-only (`component={false}`).
+- Tailwind v4 — declare custom tokens via `@theme` in `src/index.css` (no `tailwind.config.*`).
 
 ---
 
